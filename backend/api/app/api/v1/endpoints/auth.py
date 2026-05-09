@@ -46,6 +46,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GoogleLoginRequest(BaseModel):
+    credential: str   # Google ID token from the frontend
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -53,6 +57,8 @@ class TokenResponse(BaseModel):
     expires_in: int = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
     user_id: str
     role: str
+    first_name: str = ""
+    last_name: str = ""
 
 
 class RefreshTokenRequest(BaseModel):
@@ -83,6 +89,20 @@ async def get_current_active_user(current_user: dict = Depends(get_current_user)
     return current_user
 
 
+# ─── Helpers ─────────────────────────────────────────────────────────────────
+
+def _make_tokens(user_id: str, role: str, first_name: str, last_name: str) -> dict:
+    return {
+        "access_token": create_access_token(user_id, extra_claims={"role": role}),
+        "refresh_token": create_refresh_token(user_id),
+        "token_type": "bearer",
+        "user_id": user_id,
+        "role": role,
+        "first_name": first_name,
+        "last_name": last_name,
+    }
+
+
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -94,7 +114,6 @@ async def register(request: RegisterRequest):
 
     db = get_db()
 
-    # Check duplicates
     if request.phone_number:
         if await db.users.find_one({"phone_number": request.phone_number}):
             raise HTTPException(status_code=409, detail="Phone number already registered")
@@ -124,8 +143,7 @@ async def register(request: RegisterRequest):
         "updated_at": now,
     }
 
-    # Only store phone_number / email if actually provided — never store null
-    # (MongoDB unique sparse indexes skip null, but explicit null still conflicts)
+    # Only store fields that have actual values — never store null
     if request.phone_number:
         user_doc["phone_number"] = request.phone_number
     if request.email:
@@ -134,23 +152,86 @@ async def register(request: RegisterRequest):
         user_doc["hashed_password"] = hash_password(request.password)
 
     await db.users.insert_one(user_doc)
-
-    access_token = create_access_token(user_id, extra_claims={"role": request.role})
-    refresh_token = create_refresh_token(user_id)
-
     logger.info("User registered", user_id=user_id, role=request.role)
 
     return {
         "success": True,
         "message": "Account created successfully. Welcome to MAMA-LENS AI!",
-        "user_id": user_id,
-        "first_name": request.first_name,
-        "last_name": request.last_name,
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "role": request.role,
         "requires_verification": False,
+        **_make_tokens(user_id, request.role, request.first_name, request.last_name),
+    }
+
+
+@router.post("/google")
+async def google_login(request: GoogleLoginRequest):
+    """
+    Verify a Google ID token and sign in or auto-register the user.
+    """
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+        idinfo = id_token.verify_oauth2_token(
+            request.credential,
+            google_requests.Request(),
+            settings.GOOGLE_CLIENT_ID,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Google token: {e}")
+
+    google_id = idinfo["sub"]
+    email = idinfo.get("email", "")
+    first_name = idinfo.get("given_name", "")
+    last_name = idinfo.get("family_name", "")
+    picture = idinfo.get("picture", "")
+
+    db = get_db()
+
+    # Find existing user by google_id or email
+    user = await db.users.find_one({"$or": [{"google_id": google_id}, {"email": email}]})
+
+    if user:
+        # Update google_id if signing in via email match
+        if not user.get("google_id"):
+            await db.users.update_one(
+                {"_id": user["_id"]},
+                {"$set": {"google_id": google_id, "profile_photo_url": picture}}
+            )
+        logger.info("Google login", user_id=user["_id"])
+        return _make_tokens(user["_id"], user["role"], user["first_name"], user["last_name"])
+
+    # Auto-register new Google user
+    user_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    user_doc = {
+        "_id": user_id,
+        "first_name": first_name,
+        "last_name": last_name,
+        "role": "patient",
+        "preferred_language": "en",
+        "status": "active",
+        "email_verified": True,
+        "phone_verified": False,
+        "is_active": True,
+        "onboarding_completed": False,
+        "data_consent_given": True,
+        "data_consent_at": now,
+        "failed_login_attempts": 0,
+        "google_id": google_id,
+        "profile_photo_url": picture,
+        "created_at": now,
+        "updated_at": now,
+    }
+    if email:
+        user_doc["email"] = email
+
+    await db.users.insert_one(user_doc)
+    logger.info("Google auto-register", user_id=user_id, email=email)
+
+    return {
+        "success": True,
+        "message": "Account created via Google. Welcome to MAMA-LENS AI!",
+        "requires_verification": False,
+        **_make_tokens(user_id, "patient", first_name, last_name),
     }
 
 
@@ -158,7 +239,6 @@ async def register(request: RegisterRequest):
 async def login(request: LoginRequest):
     db = get_db()
 
-    # Find by email or phone — only query the field that was provided
     if "@" in request.identifier:
         query = {"email": request.identifier}
     else:
@@ -168,10 +248,7 @@ async def login(request: LoginRequest):
     if not user or not user.get("hashed_password"):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not verify_password(request.password, user["hashed_password"]):
-        await db.users.update_one(
-            {"_id": user["_id"]},
-            {"$inc": {"failed_login_attempts": 1}}
-        )
+        await db.users.update_one({"_id": user["_id"]}, {"$inc": {"failed_login_attempts": 1}})
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if user.get("status") == "suspended":
         raise HTTPException(status_code=401, detail="Account suspended")
@@ -180,17 +257,8 @@ async def login(request: LoginRequest):
         {"_id": user["_id"]},
         {"$set": {"failed_login_attempts": 0, "last_login_at": datetime.now(timezone.utc).isoformat()}}
     )
-
-    access_token = create_access_token(user["_id"], extra_claims={"role": user["role"]})
-    refresh_token = create_refresh_token(user["_id"])
-
     logger.info("User logged in", user_id=user["_id"])
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user_id=user["_id"],
-        role=user["role"],
-    )
+    return _make_tokens(user["_id"], user["role"], user.get("first_name", ""), user.get("last_name", ""))
 
 
 @router.post("/refresh")
@@ -208,12 +276,7 @@ async def refresh_token(request: RefreshTokenRequest):
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    return TokenResponse(
-        access_token=create_access_token(user["_id"], extra_claims={"role": user["role"]}),
-        refresh_token=create_refresh_token(user["_id"]),
-        user_id=user["_id"],
-        role=user["role"],
-    )
+    return _make_tokens(user["_id"], user["role"], user.get("first_name", ""), user.get("last_name", ""))
 
 
 @router.post("/logout")

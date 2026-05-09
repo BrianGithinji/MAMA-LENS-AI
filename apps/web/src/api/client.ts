@@ -69,6 +69,7 @@ apiClient.interceptors.response.use(
 export const authAPI = {
   register: (data: object) => apiClient.post("/auth/register", data),
   login: (data: object) => apiClient.post("/auth/login", data),
+  googleLogin: (credential: string) => apiClient.post("/auth/google", { credential }),
   verifyOTP: (data: object) => apiClient.post("/auth/verify-otp", data),
   requestOTP: (identifier: string) => apiClient.post(`/auth/request-otp?identifier=${identifier}`),
   logout: () => apiClient.post("/auth/logout"),
