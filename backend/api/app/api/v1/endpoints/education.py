@@ -1,16 +1,16 @@
 """MAMA-LENS AI — Education Endpoints (MongoDB)"""
-import sys
-import os
 from fastapi import APIRouter, Depends, Query
 from app.api.v1.endpoints.auth import get_current_active_user
 
 router = APIRouter()
 
-_NLP_PATH = os.path.join(os.path.dirname(__file__), "../../../../../../ai/nlp")
-_REC_PATH = os.path.join(os.path.dirname(__file__), "../../../../../../ai/recommendation")
-for p in [_NLP_PATH, _REC_PATH]:
-    if p not in sys.path:
-        sys.path.insert(0, p)
+# Import AI modules bundled inside the backend package
+try:
+    from app.conversation_ai import ConversationalAI
+    from app.recommendation_engine import RecommendationEngine, UserProfile
+    _AI_AVAILABLE = True
+except ImportError:
+    _AI_AVAILABLE = False
 
 
 @router.get("/weekly/{week}")
@@ -19,8 +19,9 @@ async def get_weekly_education(
     language: str = Query(default="en"),
     current_user: dict = Depends(get_current_active_user),
 ):
+    if not _AI_AVAILABLE:
+        return {"week": week, "language": language, "content": f"Week {week}: Continue attending your ANC visits and taking your supplements."}
     try:
-        from conversation_ai import ConversationalAI
         ai = ConversationalAI()
         content = ai.get_weekly_education(week, language)
         return {"week": week, "language": language, "content": content}
@@ -35,8 +36,9 @@ async def get_recommendations(
     language: str = Query(default="en"),
     current_user: dict = Depends(get_current_active_user),
 ):
+    if not _AI_AVAILABLE:
+        return {"error": "AI modules unavailable", "message": "Recommendations temporarily unavailable"}
     try:
-        from recommendation_engine import RecommendationEngine, UserProfile
         engine = RecommendationEngine()
         profile = UserProfile(
             user_id=current_user["_id"],

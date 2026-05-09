@@ -1,14 +1,14 @@
 """MAMA-LENS AI — WhatsApp Webhook Endpoints (MongoDB)"""
-import sys
-import os
 from fastapi import APIRouter, Depends, Request, HTTPException, BackgroundTasks
 from app.core.config import settings
 
 router = APIRouter()
 
-_NLP_PATH = os.path.join(os.path.dirname(__file__), "../../../../../../ai/nlp")
-if _NLP_PATH not in sys.path:
-    sys.path.insert(0, _NLP_PATH)
+try:
+    from app.conversation_ai import ConversationalAI
+    _AI_AVAILABLE = True
+except ImportError:
+    _AI_AVAILABLE = False
 
 
 @router.get("/webhook")
@@ -36,10 +36,10 @@ async def _process_webhook(payload: dict):
             if not content:
                 continue
             try:
-                from conversation_ai import ConversationalAI
-                ai = ConversationalAI(openai_api_key=settings.OPENAI_API_KEY)
-                response = ai.chat(session_id=f"wa_{from_number}", user_message=content, channel="whatsapp")
-                print(f"WhatsApp → {from_number[:6]}****: {response.message[:80]}")
+                if _AI_AVAILABLE:
+                    ai = ConversationalAI(openai_api_key=settings.OPENAI_API_KEY)
+                    response = ai.chat(session_id=f"wa_{from_number}", user_message=content, channel="whatsapp")
+                    print(f"WhatsApp → {from_number[:6]}****: {response.message[:80]}")
             except Exception as e:
                 print(f"WhatsApp AI error: {e}")
     except Exception as e:

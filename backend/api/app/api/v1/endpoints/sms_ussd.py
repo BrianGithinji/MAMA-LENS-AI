@@ -1,15 +1,15 @@
 """MAMA-LENS AI — SMS & USSD Endpoints (MongoDB)"""
-import sys
-import os
 from fastapi import APIRouter, Form, Request, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from app.core.config import settings
 
 router = APIRouter()
 
-_NLP_PATH = os.path.join(os.path.dirname(__file__), "../../../../../../ai/nlp")
-if _NLP_PATH not in sys.path:
-    sys.path.insert(0, _NLP_PATH)
+try:
+    from app.conversation_ai import ConversationalAI
+    _AI_AVAILABLE = True
+except ImportError:
+    _AI_AVAILABLE = False
 
 USSD_MAIN = {
     "en": "CON Welcome to MAMA-LENS AI\nMaternal Health Support\n\n1. Check symptoms\n2. Pregnancy info\n3. Find clinic\n4. Emergency help\n5. Mental health support",

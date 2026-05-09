@@ -1,7 +1,5 @@
 """MAMA-LENS AI — AI Avatar Endpoints (MongoDB)"""
 import io
-import sys
-import os
 from typing import Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 import structlog
@@ -12,11 +10,13 @@ from app.api.v1.endpoints.auth import get_current_active_user
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-_NLP_PATH = os.path.join(os.path.dirname(__file__), "../../../../../../ai/nlp")
-_EMOTION_PATH = os.path.join(os.path.dirname(__file__), "../../../../../../ai/emotion-ai")
-for p in [_NLP_PATH, _EMOTION_PATH]:
-    if p not in sys.path:
-        sys.path.insert(0, p)
+# Import AI modules bundled inside the backend package
+try:
+    from app.conversation_ai import ConversationalAI
+    from app.emotion_detector import EmotionDetector, EmotionInput
+    _AI_AVAILABLE = True
+except ImportError:
+    _AI_AVAILABLE = False
 
 
 class AvatarChatRequest:
@@ -53,38 +53,39 @@ async def avatar_chat(
     suggested_actions = []
     emotion_detected = None
 
-    try:
-        from conversation_ai import ConversationalAI
-        ai = ConversationalAI(openai_api_key=settings.OPENAI_API_KEY)
-        response = ai.chat(
-            session_id=request.session_id or current_user["_id"],
-            user_message=request.message,
-            language=request.language,
-            channel="app",
-            gestational_age_weeks=request.gestational_age_weeks,
-        )
-        text_response = response.message
-        intent = response.intent.value
-        is_emergency = response.is_emergency
-        suggested_actions = response.suggested_actions
-    except Exception as e:
-        logger.warning("AI chat fallback", error=str(e))
+    if not _AI_AVAILABLE:
         text_response = "I'm here to support you. How are you feeling today?"
+    else:
+        try:
+            ai = ConversationalAI(openai_api_key=settings.OPENAI_API_KEY)
+            response = ai.chat(
+                session_id=request.session_id or current_user["_id"],
+                user_message=request.message,
+                language=request.language,
+                channel="app",
+                gestational_age_weeks=request.gestational_age_weeks,
+            )
+            text_response = response.message
+            intent = response.intent.value
+            is_emergency = response.is_emergency
+            suggested_actions = response.suggested_actions
+        except Exception as e:
+            logger.warning("AI chat fallback", error=str(e))
+            text_response = "I'm here to support you. How are you feeling today?"
 
-    try:
-        from emotion_detector import EmotionDetector, EmotionInput
-        detector = EmotionDetector()
-        emotion_result = detector.detect(EmotionInput(
-            text=request.message,
-            context=request.context or "",
-            language=request.language,
-        ))
-        emotion_detected = emotion_result.primary_emotion.value
-        if emotion_result.crisis_detected:
-            text_response = emotion_result.compassionate_response
-            is_emergency = True
-    except Exception as e:
-        logger.warning("Emotion detection fallback", error=str(e))
+        try:
+            detector = EmotionDetector()
+            emotion_result = detector.detect(EmotionInput(
+                text=request.message,
+                context=request.context or "",
+                language=request.language,
+            ))
+            emotion_detected = emotion_result.primary_emotion.value
+            if emotion_result.crisis_detected:
+                text_response = emotion_result.compassionate_response
+                is_emergency = True
+        except Exception as e:
+            logger.warning("Emotion detection fallback", error=str(e))
 
     return {
         "text_response": text_response,

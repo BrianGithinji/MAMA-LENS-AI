@@ -1,7 +1,5 @@
 """MAMA-LENS AI — Risk Assessment Endpoints (MongoDB)"""
 import uuid
-import sys
-import os
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, BackgroundTasks, status, HTTPException
@@ -14,9 +12,12 @@ from app.api.v1.endpoints.auth import get_current_active_user
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-_AI_PATH = os.path.join(os.path.dirname(__file__), "../../../../../../ai/risk-engine")
-if _AI_PATH not in sys.path:
-    sys.path.insert(0, _AI_PATH)
+# Import risk engine — bundled inside the backend package for Render compatibility
+try:
+    from app.risk_engine import MaternalRiskEngine, RiskInput, NutritionStatus
+    _RISK_ENGINE_AVAILABLE = True
+except ImportError:
+    _RISK_ENGINE_AVAILABLE = False
 
 
 class RiskAssessmentRequest(BaseModel):
@@ -51,10 +52,8 @@ async def assess_risk(
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_active_user),
 ):
-    try:
-        from risk_engine import MaternalRiskEngine, RiskInput, NutritionStatus
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"Risk engine unavailable: {e}")
+    if not _RISK_ENGINE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Risk engine unavailable: module not found")
 
     nutrition_map = {
         "poor": NutritionStatus.POOR, "fair": NutritionStatus.FAIR,
