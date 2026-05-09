@@ -48,12 +48,11 @@ def get_client() -> AsyncIOMotorClient:
     global _client
     if _client is None:
         uri = _normalise_uri(settings.MONGODB_URI)
+        # mongodb+srv:// handles TLS automatically — no extra flags needed
         _client = AsyncIOMotorClient(
             uri,
             serverSelectionTimeoutMS=30000,
             connectTimeoutMS=30000,
-            tls=True,
-            tlsAllowInvalidCertificates=False,
         )
         logger.info("MongoDB client created", uri_scheme=uri.split("://")[0])
     return _client
