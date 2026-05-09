@@ -1,5 +1,6 @@
 """
 MAMA-LENS AI — MongoDB Database Layer (Motor async driver)
+Handles both mongodb:// and mongodb+srv:// connection strings.
 """
 import structlog
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
@@ -7,19 +8,54 @@ from app.core.config import settings
 
 logger = structlog.get_logger(__name__)
 
-# ─── Client singleton ────────────────────────────────────────────────────────
-
 _client: AsyncIOMotorClient | None = None
+
+
+def _normalise_uri(uri: str) -> str:
+    """
+    Convert old-style mongodb:// shard URIs to mongodb+srv:// format.
+    Render / Atlas works best with SRV — it handles TLS automatically.
+    """
+    if uri.startswith("mongodb+srv://"):
+        return uri  # already correct
+
+    # If it's the old shard-list format, extract credentials and cluster name
+    # e.g. mongodb://user:pass@ac-xxx-shard-00-00.yyy.mongodb.net:27017,...
+    if "mongodb.net:27017" in uri and "shard-00-00" in uri:
+        try:
+            # Extract user:pass
+            after_scheme = uri.replace("mongodb://", "")
+            creds, rest = after_scheme.split("@", 1)
+            # Extract cluster base from first shard host
+            first_host = rest.split(",")[0]          # ac-xxx-shard-00-00.yyy.mongodb.net:27017
+            host_no_port = first_host.split(":")[0]  # ac-xxx-shard-00-00.yyy.mongodb.net
+            # Cluster SRV host = remove the shard suffix
+            # ac-d88dmls-shard-00-00.e5o71yv.mongodb.net → ac-d88dmls.e5o71yv.mongodb.net
+            parts = host_no_port.split(".")
+            cluster_part = parts[0]  # ac-d88dmls-shard-00-00
+            base_cluster = "-".join(cluster_part.split("-")[:-3])  # ac-d88dmls
+            srv_host = f"{base_cluster}.{'.'.join(parts[1:])}"
+            srv_uri = f"mongodb+srv://{creds}@{srv_host}/?retryWrites=true&w=majority&appName=MAMA"
+            logger.info("Converted to SRV URI", srv_host=srv_host)
+            return srv_uri
+        except Exception as e:
+            logger.warning("URI normalisation failed, using as-is", error=str(e))
+
+    return uri
 
 
 def get_client() -> AsyncIOMotorClient:
     global _client
     if _client is None:
+        uri = _normalise_uri(settings.MONGODB_URI)
         _client = AsyncIOMotorClient(
-            settings.MONGODB_URI,
-            serverSelectionTimeoutMS=10000,
-            connectTimeoutMS=10000,
+            uri,
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            tls=True,
+            tlsAllowInvalidCertificates=False,
         )
+        logger.info("MongoDB client created", uri_scheme=uri.split("://")[0])
     return _client
 
 
@@ -27,58 +63,44 @@ def get_database() -> AsyncIOMotorDatabase:
     return get_client()[settings.MONGODB_DB_NAME]
 
 
-# Convenience alias used throughout the app
 def get_db() -> AsyncIOMotorDatabase:
     return get_database()
 
-
-# ─── Startup / Shutdown ──────────────────────────────────────────────────────
 
 async def init_db():
     """Connect to MongoDB and create indexes."""
     db = get_database()
 
-    # Users
     await db.users.create_index("phone_number", unique=True, sparse=True)
     await db.users.create_index("email", unique=True, sparse=True)
     await db.users.create_index("role")
     await db.users.create_index("status")
 
-    # Pregnancy profiles
     await db.pregnancy_profiles.create_index("user_id")
     await db.pregnancy_profiles.create_index([("user_id", 1), ("is_active", 1)])
 
-    # Risk assessments
     await db.risk_assessments.create_index("user_id")
     await db.risk_assessments.create_index("is_emergency")
     await db.risk_assessments.create_index([("user_id", 1), ("created_at", -1)])
 
-    # Health records & vitals
     await db.health_records.create_index("user_id")
     await db.vital_signs.create_index("user_id")
 
-    # Appointments & consultations
     await db.appointments.create_index("patient_id")
     await db.appointments.create_index("status")
     await db.consultations.create_index("patient_id")
 
-    # Messages
     await db.messages.create_index("user_id")
     await db.messages.create_index("is_emergency")
 
-    # Facilities — 2dsphere for geo queries
-    await db.health_facilities.create_index([("location", "2dsphere")], sparse=True)
     await db.health_facilities.create_index("country")
     await db.health_facilities.create_index("is_active")
 
-    # Notifications
     await db.notifications.create_index("user_id")
     await db.notifications.create_index([("user_id", 1), ("is_read", 1)])
 
-    # Wearables
     await db.wearable_devices.create_index("user_id")
     await db.wearable_readings.create_index("user_id")
-    await db.wearable_readings.create_index("is_abnormal")
 
     logger.info("MongoDB indexes created", db=settings.MONGODB_DB_NAME)
 

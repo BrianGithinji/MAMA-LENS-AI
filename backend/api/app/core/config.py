@@ -19,14 +19,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "dev-secret-key-mamalens-2026-change-in-prod"
     DEBUG: bool = True
 
-    # MongoDB
+    # MongoDB — SRV format works on all platforms including Render
     MONGODB_URI: str = (
-        "mongodb://BrianGithinji:BrianMAMA@"
-        "ac-d88dmls-shard-00-00.e5o71yv.mongodb.net:27017,"
-        "ac-d88dmls-shard-00-01.e5o71yv.mongodb.net:27017,"
-        "ac-d88dmls-shard-00-02.e5o71yv.mongodb.net:27017/"
-        "?ssl=true&replicaSet=atlas-g8lj75-shard-0"
-        "&authSource=admin&appName=MAMA"
+        "mongodb+srv://BrianGithinji:BrianMAMA@"
+        "ac-d88dmls.e5o71yv.mongodb.net/"
+        "?retryWrites=true&w=majority&appName=MAMA"
     )
     MONGODB_DB_NAME: str = "mamalens"
 
