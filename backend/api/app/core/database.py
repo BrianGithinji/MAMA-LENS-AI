@@ -67,25 +67,50 @@ def get_db() -> AsyncIOMotorDatabase:
 
 
 async def init_db():
-    """Connect to MongoDB and create indexes."""
+    """Connect to MongoDB and create indexes. Safe to call on every startup."""
     db = get_database()
 
-    # Drop and recreate user indexes to ensure sparse=True is set correctly
-    # This handles cases where old non-sparse indexes exist with null values
-    try:
-        await db.users.drop_index("email_1")
-    except Exception:
-        pass
-    try:
-        await db.users.drop_index("phone_number_1")
-    except Exception:
-        pass
+    async def safe_index(collection, key, **kwargs):
+        """Create index, ignore if it already exists with same options."""
+        try:
+            await collection.create_index(key, **kwargs)
+        except Exception as e:
+            # Index already exists with different options — skip silently
+            logger.warning("Index creation skipped", key=str(key), error=str(e)[:100])
 
-    # Recreate as sparse — null values are excluded from the unique constraint
-    await db.users.create_index("phone_number", unique=True, sparse=True)
-    await db.users.create_index("email", unique=True, sparse=True)
-    await db.users.create_index("role")
-    await db.users.create_index("status")
+    await safe_index(db.users, "phone_number", unique=True, sparse=True)
+    await safe_index(db.users, "email", unique=True, sparse=True)
+    await safe_index(db.users, "google_id", unique=True, sparse=True)
+    await safe_index(db.users, "role")
+    await safe_index(db.users, "status")
+
+    await safe_index(db.pregnancy_profiles, "user_id")
+    await safe_index(db.pregnancy_profiles, [("user_id", 1), ("is_active", 1)])
+
+    await safe_index(db.risk_assessments, "user_id")
+    await safe_index(db.risk_assessments, "is_emergency")
+    await safe_index(db.risk_assessments, [("user_id", 1), ("created_at", -1)])
+
+    await safe_index(db.health_records, "user_id")
+    await safe_index(db.vital_signs, "user_id")
+
+    await safe_index(db.appointments, "patient_id")
+    await safe_index(db.appointments, "status")
+    await safe_index(db.consultations, "patient_id")
+
+    await safe_index(db.messages, "user_id")
+    await safe_index(db.messages, "is_emergency")
+
+    await safe_index(db.health_facilities, "country")
+    await safe_index(db.health_facilities, "is_active")
+
+    await safe_index(db.notifications, "user_id")
+    await safe_index(db.notifications, [("user_id", 1), ("is_read", 1)])
+
+    await safe_index(db.wearable_devices, "user_id")
+    await safe_index(db.wearable_readings, "user_id")
+
+    logger.info("MongoDB indexes ready", db=settings.MONGODB_DB_NAME)
 
     await db.pregnancy_profiles.create_index("user_id")
     await db.pregnancy_profiles.create_index([("user_id", 1), ("is_active", 1)])
