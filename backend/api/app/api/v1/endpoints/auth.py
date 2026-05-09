@@ -109,9 +109,6 @@ async def register(request: RegisterRequest):
         "_id": user_id,
         "first_name": request.first_name,
         "last_name": request.last_name,
-        "phone_number": request.phone_number,
-        "email": request.email,
-        "hashed_password": hash_password(request.password) if request.password else None,
         "role": request.role,
         "preferred_language": request.preferred_language,
         "country": request.country,
@@ -126,6 +123,15 @@ async def register(request: RegisterRequest):
         "created_at": now,
         "updated_at": now,
     }
+
+    # Only store phone_number / email if actually provided — never store null
+    # (MongoDB unique sparse indexes skip null, but explicit null still conflicts)
+    if request.phone_number:
+        user_doc["phone_number"] = request.phone_number
+    if request.email:
+        user_doc["email"] = request.email
+    if request.password:
+        user_doc["hashed_password"] = hash_password(request.password)
 
     await db.users.insert_one(user_doc)
 
@@ -150,8 +156,11 @@ async def register(request: RegisterRequest):
 async def login(request: LoginRequest):
     db = get_db()
 
-    # Find by email or phone
-    query = {"email": request.identifier} if "@" in request.identifier else {"phone_number": request.identifier}
+    # Find by email or phone — only query the field that was provided
+    if "@" in request.identifier:
+        query = {"email": request.identifier}
+    else:
+        query = {"phone_number": request.identifier}
     user = await db.users.find_one(query)
 
     if not user or not user.get("hashed_password"):

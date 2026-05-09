@@ -70,6 +70,18 @@ async def init_db():
     """Connect to MongoDB and create indexes."""
     db = get_database()
 
+    # Drop and recreate user indexes to ensure sparse=True is set correctly
+    # This handles cases where old non-sparse indexes exist with null values
+    try:
+        await db.users.drop_index("email_1")
+    except Exception:
+        pass
+    try:
+        await db.users.drop_index("phone_number_1")
+    except Exception:
+        pass
+
+    # Recreate as sparse — null values are excluded from the unique constraint
     await db.users.create_index("phone_number", unique=True, sparse=True)
     await db.users.create_index("email", unique=True, sparse=True)
     await db.users.create_index("role")
