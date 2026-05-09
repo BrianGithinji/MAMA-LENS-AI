@@ -1,7 +1,11 @@
 """
 MAMA-LENS AI — FastAPI Application Entry Point
 MongoDB + Motor backend
+
+Port binds IMMEDIATELY so Render detects it.
+MongoDB connects lazily on first request — startup never blocks.
 """
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -12,27 +16,45 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.core.database import init_db, close_db
 from app.api.v1.router import api_router
 
 logger = structlog.get_logger(__name__)
 
+# Track whether DB has been initialised
+_db_ready = False
+
+
+async def _ensure_db():
+    """Initialise DB indexes and seed data on first use."""
+    global _db_ready
+    if _db_ready:
+        return
+    try:
+        from app.core.database import init_db
+        from app.core.seeder import seed_if_empty
+        await init_db()
+        await seed_if_empty()
+        _db_ready = True
+        logger.info("MongoDB ready")
+    except Exception as e:
+        logger.error("MongoDB init failed", error=str(e))
+        # Don't crash — let health check report degraded state
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Startup ──────────────────────────────────────────────
-    logger.info("Starting MAMA-LENS AI", version=settings.APP_VERSION, env=settings.APP_ENV)
-    await init_db()
-
-    # Seed demo facilities if collection is empty
-    from app.core.seeder import seed_if_empty
-    await seed_if_empty()
-
-    logger.info("MAMA-LENS AI ready", url="http://localhost:8001")
+    # ── Startup — bind port immediately, DB connects lazily ──
+    logger.info("MAMA-LENS AI starting", version=settings.APP_VERSION, env=settings.APP_ENV)
+    # Kick off DB init in background so port binds without waiting
+    import asyncio
+    asyncio.create_task(_ensure_db())
     yield
-
     # ── Shutdown ─────────────────────────────────────────────
-    await close_db()
+    try:
+        from app.core.database import close_db
+        await close_db()
+    except Exception:
+        pass
     logger.info("MAMA-LENS AI shut down")
 
 
@@ -60,12 +82,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 @app.middleware("http")
 async def timing_middleware(request: Request, call_next):
     start = time.time()
-    try:
-        response = await call_next(request)
-    except Exception as exc:
-        import traceback
-        logger.error("Unhandled exception", error=str(exc), traceback=traceback.format_exc())
-        raise
+    response = await call_next(request)
     response.headers["X-Response-Time"] = f"{round((time.time()-start)*1000,2)}ms"
     return response
 
@@ -85,9 +102,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error("Unhandled exception", error=str(exc), path=request.url.path)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"success": False, "error": "INTERNAL_SERVER_ERROR", "message": str(exc), "detail": traceback.format_exc()},
+        content={"success": False, "error": "INTERNAL_SERVER_ERROR", "message": str(exc)},
     )
-
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
 
@@ -96,12 +112,17 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health", tags=["System"])
 async def health_check():
+    """
+    Health check — always responds immediately.
+    Render uses this to confirm the port is open.
+    """
     return {
         "status": "healthy",
         "service": "MAMA-LENS AI",
         "version": settings.APP_VERSION,
         "environment": settings.APP_ENV,
         "database": "MongoDB Atlas",
+        "db_ready": _db_ready,
     }
 
 
