@@ -71,8 +71,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"] if settings.APP_ENV == "production" else settings.ALLOWED_ORIGINS,
+    allow_credentials=False if settings.APP_ENV == "production" else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -112,10 +112,7 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health", tags=["System"])
 async def health_check():
-    """
-    Health check — always responds immediately.
-    Render uses this to confirm the port is open.
-    """
+    """Health check — always responds immediately."""
     return {
         "status": "healthy",
         "service": "MAMA-LENS AI",
@@ -123,6 +120,7 @@ async def health_check():
         "environment": settings.APP_ENV,
         "database": "MongoDB Atlas",
         "db_ready": _db_ready,
+        "cors": "all origins allowed" if settings.APP_ENV == "production" else "restricted",
     }
 
 
