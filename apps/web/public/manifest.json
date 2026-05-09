@@ -1,0 +1,21 @@
+{
+  "name": "MAMA-LENS AI",
+  "short_name": "MAMA-LENS",
+  "description": "Guiding Safer Pregnancies Through AI and Care",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffbf5",
+  "theme_color": "#e05a2b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr"
+}

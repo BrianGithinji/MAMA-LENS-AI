@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-sans text-gray-900 bg-warm-50;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .form-input {
+    @apply w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm
+           focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent
+           bg-white transition-all;
+  }
+
+  .btn-primary {
+    @apply w-full py-4 bg-primary-500 text-white font-bold rounded-2xl
+           shadow-glow-primary disabled:opacity-60 transition-all active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply w-full py-4 border-2 border-gray-200 text-gray-700 font-semibold rounded-2xl
+           hover:border-primary-300 transition-all active:scale-95;
+  }
+
+  .card {
+    @apply bg-white rounded-3xl shadow-card p-5;
+  }
+
+  .section-title {
+    @apply text-gray-800 font-semibold text-base mb-3;
+  }
+}
+
+/* Safe area for mobile devices */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 rounded-full;
+}
+
+/* RTL support for Arabic */
+[dir="rtl"] {
+  font-family: 'Noto Sans Arabic', 'Inter', sans-serif;
+}

@@ -1,0 +1,13 @@
+# Root-level netlify.toml — points Netlify at the web app subfolder
+[build]
+  base    = "apps/web"
+  command = "npm run build"
+  publish = "apps/web/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

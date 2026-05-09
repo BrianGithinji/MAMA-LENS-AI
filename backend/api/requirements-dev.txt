@@ -1,0 +1,26 @@
+# Pure-Python only — works on Python 3.14 without MSVC/Rust
+# No pydantic v2, no compiled extensions
+
+fastapi==0.99.1          # Last version that works with pydantic v1
+uvicorn==0.23.2
+python-multipart==0.0.6
+httpx==0.24.1
+
+# Pydantic v1 — pure Python, no Rust
+pydantic[email]==1.10.13
+
+# Database — pure Python SQLite driver (no asyncpg needed)
+sqlalchemy==2.0.30
+aiosqlite==0.19.0
+
+# Auth
+python-jose==3.3.0
+passlib==1.7.4
+bcrypt==4.0.1
+
+# Config
+python-dotenv==1.0.1
+pytz==2024.1
+
+# Logging
+structlog==24.1.0

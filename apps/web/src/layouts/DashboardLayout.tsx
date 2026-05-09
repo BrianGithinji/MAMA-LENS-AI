@@ -1,0 +1,56 @@
+/**
+ * MAMA-LENS AI — Dashboard Layout with Bottom Navigation
+ */
+
+import { Outlet, NavLink, Link } from "react-router-dom";
+import { Home, Activity, MessageCircle, Calendar, User } from "lucide-react";
+import { clsx } from "clsx";
+import Logo from "../components/brand/Logo";
+
+const NAV_ITEMS = [
+  { icon: Home, label: "Home", href: "/dashboard" },
+  { icon: Activity, label: "Risk", href: "/risk-assessment" },
+  { icon: MessageCircle, label: "MAMA AI", href: "/avatar" },
+  { icon: Calendar, label: "Appointments", href: "/appointments" },
+  { icon: User, label: "Profile", href: "/profile" },
+];
+
+export default function DashboardLayout() {
+  return (
+    <div className="min-h-screen bg-warm-50">
+      {/* Main content */}
+      <main className="pb-20">
+        <Outlet />
+      </main>
+
+      {/* Bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area-pb z-50">
+        <div className="flex items-center justify-around px-2 py-2 max-w-lg mx-auto">
+          {NAV_ITEMS.map(({ icon: Icon, label, href }) => (
+            <NavLink
+              key={href}
+              to={href}
+              className={({ isActive }) =>
+                clsx(
+                  "flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition-all",
+                  isActive
+                    ? "text-primary-600 bg-primary-50"
+                    : "text-gray-400 hover:text-gray-600"
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon className={clsx("w-5 h-5", isActive && "stroke-[2.5]")} />
+                  <span className={clsx("text-xs font-medium", isActive && "font-semibold")}>
+                    {label}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+    </div>
+  );
+}

@@ -1,0 +1,210 @@
+"""MAMA-LENS AI — Authentication Endpoints (MongoDB)"""
+import uuid
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel, validator
+
+import structlog
+
+from app.core.database import get_db
+from app.core.security import (
+    hash_password, verify_password,
+    create_access_token, create_refresh_token, decode_token,
+)
+from app.core.config import settings
+
+logger = structlog.get_logger(__name__)
+router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+# ─── Schemas ─────────────────────────────────────────────────────────────────
+
+class RegisterRequest(BaseModel):
+    first_name: str
+    last_name: str
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    role: str = "patient"
+    preferred_language: str = "en"
+    country: Optional[str] = None
+    data_consent_given: bool = False
+
+    @validator("password")
+    def validate_password(cls, v):
+        if v and len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+
+class LoginRequest(BaseModel):
+    identifier: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    user_id: str
+    role: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+# ─── Dependency ──────────────────────────────────────────────────────────────
+
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
+    try:
+        payload = decode_token(token)
+        user_id = payload.get("sub")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+    db = get_db()
+    user = await db.users.find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    if not user.get("is_active", True):
+        raise HTTPException(status_code=401, detail="Account inactive")
+    if user.get("status") == "suspended":
+        raise HTTPException(status_code=401, detail="Account suspended")
+    return user
+
+
+async def get_current_active_user(current_user: dict = Depends(get_current_user)) -> dict:
+    return current_user
+
+
+# ─── Endpoints ───────────────────────────────────────────────────────────────
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register(request: RegisterRequest):
+    if not request.phone_number and not request.email:
+        raise HTTPException(status_code=400, detail="Phone number or email is required")
+    if not request.data_consent_given:
+        raise HTTPException(status_code=400, detail="Data consent is required")
+
+    db = get_db()
+
+    # Check duplicates
+    if request.phone_number:
+        if await db.users.find_one({"phone_number": request.phone_number}):
+            raise HTTPException(status_code=409, detail="Phone number already registered")
+    if request.email:
+        if await db.users.find_one({"email": request.email}):
+            raise HTTPException(status_code=409, detail="Email already registered")
+
+    user_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+
+    user_doc = {
+        "_id": user_id,
+        "first_name": request.first_name,
+        "last_name": request.last_name,
+        "phone_number": request.phone_number,
+        "email": request.email,
+        "hashed_password": hash_password(request.password) if request.password else None,
+        "role": request.role,
+        "preferred_language": request.preferred_language,
+        "country": request.country,
+        "status": "active",
+        "phone_verified": True,
+        "email_verified": True,
+        "is_active": True,
+        "onboarding_completed": False,
+        "data_consent_given": True,
+        "data_consent_at": now,
+        "failed_login_attempts": 0,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    await db.users.insert_one(user_doc)
+
+    access_token = create_access_token(user_id, extra_claims={"role": request.role})
+    refresh_token = create_refresh_token(user_id)
+
+    logger.info("User registered", user_id=user_id, role=request.role)
+
+    return {
+        "success": True,
+        "message": "Account created successfully. Welcome to MAMA-LENS AI!",
+        "user_id": user_id,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "role": request.role,
+        "requires_verification": False,
+    }
+
+
+@router.post("/login")
+async def login(request: LoginRequest):
+    db = get_db()
+
+    # Find by email or phone
+    query = {"email": request.identifier} if "@" in request.identifier else {"phone_number": request.identifier}
+    user = await db.users.find_one(query)
+
+    if not user or not user.get("hashed_password"):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not verify_password(request.password, user["hashed_password"]):
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$inc": {"failed_login_attempts": 1}}
+        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if user.get("status") == "suspended":
+        raise HTTPException(status_code=401, detail="Account suspended")
+
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"failed_login_attempts": 0, "last_login_at": datetime.now(timezone.utc).isoformat()}}
+    )
+
+    access_token = create_access_token(user["_id"], extra_claims={"role": user["role"]})
+    refresh_token = create_refresh_token(user["_id"])
+
+    logger.info("User logged in", user_id=user["_id"])
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_id=user["_id"],
+        role=user["role"],
+    )
+
+
+@router.post("/refresh")
+async def refresh_token(request: RefreshTokenRequest):
+    try:
+        payload = decode_token(request.refresh_token)
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user_id = payload.get("sub")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    db = get_db()
+    user = await db.users.find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return TokenResponse(
+        access_token=create_access_token(user["_id"], extra_claims={"role": user["role"]}),
+        refresh_token=create_refresh_token(user["_id"]),
+        user_id=user["_id"],
+        role=user["role"],
+    )
+
+
+@router.post("/logout")
+async def logout(current_user: dict = Depends(get_current_active_user)):
+    return {"success": True, "message": "Logged out successfully"}

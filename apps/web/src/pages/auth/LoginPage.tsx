@@ -1,0 +1,109 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { Eye, EyeOff, Phone } from "lucide-react";
+import { authAPI, userAPI } from "../../api/client";
+import { useAuthStore } from "../../store/authStore";
+
+interface LoginForm {
+  identifier: string;
+  password: string;
+}
+
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const { login } = useAuthStore();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+
+  const loginMutation = useMutation({
+    mutationFn: (data: LoginForm) => authAPI.login(data),
+    onSuccess: async (response) => {
+      const tokens = response.data;
+      // Fetch user profile
+      try {
+        const profileResponse = await userAPI.getProfile();
+        login(tokens, profileResponse.data);
+        toast.success("Welcome back! 💚");
+        navigate("/dashboard");
+      } catch {
+        toast.error("Login failed. Please try again.");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Invalid credentials");
+    },
+  });
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
+      <p className="text-gray-500 text-sm mt-1">Sign in to your MAMA-LENS account</p>
+
+      <form onSubmit={handleSubmit((data) => loginMutation.mutate(data))} className="mt-8 space-y-4">
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-1.5">
+            Phone number or email
+          </label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              {...register("identifier", { required: "Phone or email is required" })}
+              type="text"
+              placeholder="+254 700 000 000 or email"
+              className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+            />
+          </div>
+          {errors.identifier && <p className="text-emergency-500 text-xs mt-1">{errors.identifier.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-gray-700 text-sm font-medium mb-1.5">Password</label>
+          <div className="relative">
+            <input
+              {...register("password", { required: "Password is required" })}
+              type={showPassword ? "text" : "password"}
+              placeholder="Your password"
+              className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent pr-12"
+            />
+            <button type="button" onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.password && <p className="text-emergency-500 text-xs mt-1">{errors.password.message}</p>}
+        </div>
+
+        <div className="flex justify-end">
+          <Link to="/forgot-password" className="text-primary-500 text-sm font-medium">
+            Forgot password?
+          </Link>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loginMutation.isPending}
+          className="w-full py-4 bg-primary-500 text-white font-bold rounded-2xl shadow-glow-primary disabled:opacity-60 transition-all active:scale-95"
+        >
+          {loginMutation.isPending ? "Signing in..." : "Sign In"}
+        </button>
+      </form>
+
+      <p className="text-center text-gray-500 text-sm mt-6">
+        Don't have an account?{" "}
+        <Link to="/register" className="text-primary-500 font-semibold">
+          Create account
+        </Link>
+      </p>
+
+      <div className="mt-8 p-4 bg-calm-50 rounded-2xl">
+        <p className="text-calm-700 text-xs text-center">
+          🔒 Your health data is encrypted and protected. We never share your information without consent.
+        </p>
+      </div>
+    </div>
+  );
+}
