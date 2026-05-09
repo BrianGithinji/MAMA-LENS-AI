@@ -1,6 +1,8 @@
 /**
  * MAMA-LENS AI — Logo Component
  * Uses the official MAMA-LENS AI PNG logo as-is, at reduced sizes.
+ * The PNG has a white background — always wrap in a white container
+ * when placing on coloured backgrounds.
  */
 
 import logoPng from "../../assets/logo.png";
@@ -10,7 +12,7 @@ interface LogoProps {
   variant?: "full" | "compact" | "icon";
   /** Override the default width in pixels */
   width?: number;
-  /** Invert colours for use on dark/coloured backgrounds */
+  /** @deprecated — PNG has white bg, use a white wrapper div instead */
   inverted?: boolean;
   className?: string;
 }
@@ -21,12 +23,7 @@ const DEFAULT_WIDTHS: Record<NonNullable<LogoProps["variant"]>, number> = {
   icon:     40,
 };
 
-export default function Logo({
-  variant = "full",
-  width,
-  inverted = false,
-  className,
-}: LogoProps) {
+export default function Logo({ variant = "full", width, className }: LogoProps) {
   const w = width ?? DEFAULT_WIDTHS[variant];
 
   return (
@@ -35,11 +32,7 @@ export default function Logo({
       alt="MAMA-LENS AI"
       width={w}
       style={{ width: w, height: "auto", display: "block" }}
-      className={clsx(
-        "select-none flex-shrink-0",
-        inverted && "brightness-0 invert",   // CSS filter to make it white on dark bg
-        className
-      )}
+      className={clsx("select-none flex-shrink-0", className)}
       draggable={false}
     />
   );

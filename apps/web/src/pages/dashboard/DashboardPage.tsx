@@ -115,9 +115,11 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-2xl mx-auto"
         >
-          {/* Logo in header */}
+          {/* Logo in header — white pill so PNG background blends cleanly */}
           <div className="flex items-center justify-between mb-4">
-            <Logo variant="compact" inverted width={130} />
+            <div className="bg-white/95 rounded-2xl px-3 py-1.5 inline-block">
+              <Logo variant="compact" width={100} />
+            </div>
             <Link to="/notifications" className="relative">
               {notifications && notifications.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-warm-400 rounded-full text-white text-[9px] flex items-center justify-center font-bold">
