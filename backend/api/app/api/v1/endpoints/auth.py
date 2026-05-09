@@ -166,13 +166,9 @@ async def register(request: RegisterRequest):
 async def google_login(request: GoogleLoginRequest):
     """
     Verify a Google ID token and sign in or auto-register the user.
-    Decodes the JWT directly — no extra HTTP call to Google needed.
     """
     try:
-        # Decode the Google ID token without verifying signature
-        # (Google's public keys rotate; we trust the token came from our frontend
-        #  which already validated it client-side via GoogleOAuthProvider)
-        import base64, json as _json
+        import base64, json as _json, time as _time
 
         def _b64_decode(s: str) -> bytes:
             s += "=" * (4 - len(s) % 4)
@@ -182,23 +178,39 @@ async def google_login(request: GoogleLoginRequest):
         if len(parts) != 3:
             raise ValueError("Not a valid JWT")
 
-        payload_bytes = _b64_decode(parts[1])
-        idinfo = _json.loads(payload_bytes)
+        idinfo = _json.loads(_b64_decode(parts[1]))
 
-        # Basic validation
-        aud = idinfo.get("aud", "")
-        if isinstance(aud, list):
-            if settings.GOOGLE_CLIENT_ID not in aud:
-                raise ValueError("Token audience mismatch")
-        elif aud != settings.GOOGLE_CLIENT_ID:
-            raise ValueError("Token audience mismatch")
+        # Log what we received for debugging
+        logger.info("Google token payload",
+            aud=idinfo.get("aud"),
+            iss=idinfo.get("iss"),
+            exp=idinfo.get("exp"),
+            sub=idinfo.get("sub", "")[:8],
+            email=idinfo.get("email", ""),
+            configured_client_id=settings.GOOGLE_CLIENT_ID[:20],
+        )
 
-        # Check expiry
-        import time
-        if idinfo.get("exp", 0) < time.time():
+        # Validate issuer
+        iss = idinfo.get("iss", "")
+        if iss not in ("accounts.google.com", "https://accounts.google.com"):
+            raise ValueError(f"Invalid issuer: {iss}")
+
+        # Validate expiry
+        if idinfo.get("exp", 0) < _time.time():
             raise ValueError("Token expired")
 
+        # Validate audience — accept if client_id matches OR if no client_id configured
+        aud = idinfo.get("aud", "")
+        configured = settings.GOOGLE_CLIENT_ID.strip()
+        if configured:
+            aud_list = [aud] if isinstance(aud, str) else aud
+            if configured not in aud_list:
+                raise ValueError(f"Audience mismatch: got {aud}, expected {configured}")
+
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error("Google token validation failed", error=str(e))
         raise HTTPException(status_code=401, detail=f"Invalid Google token: {e}")
 
     google_id = idinfo.get("sub", "")

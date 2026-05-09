@@ -39,8 +39,6 @@ class Settings(BaseSettings):
 
     # Google OAuth
     GOOGLE_CLIENT_ID: str = "1955475168-giiefrpni7di4s9i9b7v6mgtmpa22emp.apps.googleusercontent.com"
-
-    # ElevenLabs
     ELEVENLABS_API_KEY: str = ""
 
     # LiveKit
