@@ -6,8 +6,6 @@ import toast from "react-hot-toast";
 import { Eye, EyeOff, Phone } from "lucide-react";
 import { authAPI, userAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
-
-interface LoginForm {
   identifier: string;
   password: string;
 }
@@ -23,18 +21,33 @@ export default function LoginPage() {
     mutationFn: (data: LoginForm) => authAPI.login(data),
     onSuccess: async (response) => {
       const tokens = response.data;
-      // Fetch user profile
+      // Store tokens immediately so the profile request is authenticated
+      useAuthStore.getState().setTokens(tokens.access_token, tokens.refresh_token);
       try {
         const profileResponse = await userAPI.getProfile();
         login(tokens, profileResponse.data);
         toast.success("Welcome back! 💚");
         navigate("/dashboard");
       } catch {
-        toast.error("Login failed. Please try again.");
+        // Profile fetch failed — log in with basic info from token response
+        login(tokens, {
+          id: tokens.user_id,
+          first_name: "",
+          last_name: "",
+          role: tokens.role,
+          preferred_language: "en",
+          onboarding_completed: false,
+        });
+        toast.success("Welcome back! 💚");
+        navigate("/dashboard");
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Invalid credentials");
+      // Backend returns 'detail' not 'message'
+      const msg = error.response?.data?.detail
+        || error.response?.data?.message
+        || "Invalid credentials. Please check your phone number and password.";
+      toast.error(msg);
     },
   });
 
