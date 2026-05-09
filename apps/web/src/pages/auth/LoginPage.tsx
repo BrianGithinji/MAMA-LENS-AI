@@ -6,6 +6,8 @@ import toast from "react-hot-toast";
 import { Eye, EyeOff, Phone } from "lucide-react";
 import { authAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
+
+interface LoginForm {
   identifier: string;
   password: string;
 }
