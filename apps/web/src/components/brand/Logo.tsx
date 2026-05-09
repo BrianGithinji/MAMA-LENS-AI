@@ -1,11 +1,6 @@
 /**
  * MAMA-LENS AI — Logo Component
  * Uses the official MAMA-LENS AI PNG logo as-is, at reduced sizes.
- *
- * Variants:
- *   full    — larger logo for auth screens / splash (width ~160px)
- *   compact — medium logo for nav headers (width ~100px)
- *   icon    — small logo for avatars / badges (width ~40px)
  */
 
 import logoPng from "../../assets/logo.png";
@@ -13,25 +8,38 @@ import { clsx } from "clsx";
 
 interface LogoProps {
   variant?: "full" | "compact" | "icon";
+  /** Override the default width in pixels */
+  width?: number;
+  /** Invert colours for use on dark/coloured backgrounds */
+  inverted?: boolean;
   className?: string;
 }
 
-const WIDTHS: Record<NonNullable<LogoProps["variant"]>, number> = {
+const DEFAULT_WIDTHS: Record<NonNullable<LogoProps["variant"]>, number> = {
   full:    160,
   compact: 100,
   icon:     40,
 };
 
-export default function Logo({ variant = "full", className }: LogoProps) {
-  const width = WIDTHS[variant];
+export default function Logo({
+  variant = "full",
+  width,
+  inverted = false,
+  className,
+}: LogoProps) {
+  const w = width ?? DEFAULT_WIDTHS[variant];
 
   return (
     <img
       src={logoPng}
       alt="MAMA-LENS AI"
-      width={width}
-      style={{ width, height: "auto", display: "block" }}
-      className={clsx("select-none flex-shrink-0", className)}
+      width={w}
+      style={{ width: w, height: "auto", display: "block" }}
+      className={clsx(
+        "select-none flex-shrink-0",
+        inverted && "brightness-0 invert",   // CSS filter to make it white on dark bg
+        className
+      )}
       draggable={false}
     />
   );
