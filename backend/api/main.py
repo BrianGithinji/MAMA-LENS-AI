@@ -71,10 +71,19 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.APP_ENV == "production" else settings.ALLOWED_ORIGINS,
-    allow_credentials=False if settings.APP_ENV == "production" else True,
-    allow_methods=["*"],
+    allow_origins=[
+        "https://mama-lens.netlify.app",
+        "https://mama-lens-ai.netlify.app",
+        "https://mamalens.netlify.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -108,6 +117,20 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ─── Routes ───────────────────────────────────────────────────────────────────
 
 app.include_router(api_router, prefix="/api/v1")
+
+
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str, request: Request):
+    """Handle CORS preflight OPTIONS requests explicitly."""
+    from fastapi.responses import Response
+    response = Response()
+    origin = request.headers.get("origin", "")
+    response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Max-Age"] = "86400"
+    return response
 
 
 @app.get("/health", tags=["System"])
