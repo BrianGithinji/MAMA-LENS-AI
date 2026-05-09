@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, Phone } from "lucide-react";
-import { authAPI, userAPI } from "../../api/client";
+import { authAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
   identifier: string;
   password: string;
@@ -19,34 +19,31 @@ export default function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: (data: LoginForm) => authAPI.login(data),
-    onSuccess: async (response) => {
-      const tokens = response.data;
-      // Store tokens immediately so the profile request is authenticated
-      useAuthStore.getState().setTokens(tokens.access_token, tokens.refresh_token);
-      try {
-        const profileResponse = await userAPI.getProfile();
-        login(tokens, profileResponse.data);
-        toast.success("Welcome back! 💚");
-        navigate("/dashboard");
-      } catch {
-        // Profile fetch failed — log in with basic info from token response
-        login(tokens, {
-          id: tokens.user_id,
-          first_name: "",
+    onSuccess: (response) => {
+      const { access_token, refresh_token, user_id, role } = response.data;
+
+      // Store tokens and log in immediately using data from the login response.
+      // No second /users/me call needed — avoids race condition where token
+      // isn't in the store yet when the profile request fires.
+      login(
+        { access_token, refresh_token },
+        {
+          id: user_id,
+          first_name: "",        // will be populated when dashboard loads /users/me
           last_name: "",
-          role: tokens.role,
+          role,
           preferred_language: "en",
           onboarding_completed: false,
-        });
-        toast.success("Welcome back! 💚");
-        navigate("/dashboard");
-      }
+        }
+      );
+      toast.success("Welcome back! 💚");
+      navigate("/dashboard");
     },
     onError: (error: any) => {
-      // Backend returns 'detail' not 'message'
-      const msg = error.response?.data?.detail
-        || error.response?.data?.message
-        || "Invalid credentials. Please check your phone number and password.";
+      const msg =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Invalid credentials. Please check your phone number and password.";
       toast.error(msg);
     },
   });

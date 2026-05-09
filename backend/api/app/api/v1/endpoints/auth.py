@@ -144,6 +144,8 @@ async def register(request: RegisterRequest):
         "success": True,
         "message": "Account created successfully. Welcome to MAMA-LENS AI!",
         "user_id": user_id,
+        "first_name": request.first_name,
+        "last_name": request.last_name,
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",

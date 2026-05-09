@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { authAPI, userAPI } from "../../api/client";
+import { authAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 
 export default function RegisterPage() {
@@ -15,19 +15,21 @@ export default function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: (data: object) => authAPI.register(data),
-    onSuccess: async (response) => {
-      const { access_token, refresh_token, user_id, role } = response.data;
-      // Fetch full profile then log in immediately — no OTP step
-      try {
-        // Store tokens first so the profile request is authenticated
-        useAuthStore.getState().setTokens(access_token, refresh_token);
-        const profileResponse = await userAPI.getProfile();
-        login({ access_token, refresh_token }, profileResponse.data);
-        toast.success("Welcome to MAMA-LENS AI! 💚");
-        navigate("/dashboard");
-      } catch {
-        toast.error("Registration failed. Please try again.");
-      }
+    onSuccess: (response) => {
+      const { access_token, refresh_token, user_id, role, first_name, last_name } = response.data;
+      login(
+        { access_token, refresh_token },
+        {
+          id: user_id,
+          first_name: first_name || "",
+          last_name: last_name || "",
+          role,
+          preferred_language: "en",
+          onboarding_completed: false,
+        }
+      );
+      toast.success("Welcome to MAMA-LENS AI! 💚");
+      navigate("/dashboard");
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.detail || "Registration failed");
