@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # MongoDB — SRV format works on all platforms including Render
     MONGODB_URI: str = (
         "mongodb+srv://BrianGithinji:BrianMAMA@"
-        "ac-d88dmls.e5o71yv.mongodb.net/"
+        "mama.e5o71yv.mongodb.net/"
         "?retryWrites=true&w=majority&appName=MAMA"
     )
     MONGODB_DB_NAME: str = "mamalens"
