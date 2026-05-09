@@ -61,6 +61,9 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
+        "https://mama-lens-ai.onrender.com",
+        "https://mama-lens-ai.netlify.app",
+        "https://mamalens.netlify.app",
     ]
 
     @field_validator("ALLOWED_ORIGINS", mode="before")

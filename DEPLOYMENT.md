@@ -96,9 +96,9 @@ Render auto-redeploys.
 ## Verify
 
 ```
-https://mamalens-api.onrender.com/health
+https://mama-lens-ai.onrender.com/health
 ```
-→ `{"status":"healthy","database":"MongoDB Atlas"}`
+→ `{"status":"healthy","database":"MongoDB Atlas","db_ready":true}` ✅ **LIVE**
 
 Then open your Netlify URL and register.
 
