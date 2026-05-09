@@ -111,48 +111,98 @@ class ConversationResponse:
 
 INTENT_PATTERNS: Dict[str, List[str]] = {
     Intent.EMERGENCY: [
+        # English
         r"\b(bleeding|hemorrhage|seizure|unconscious|not\s+breathing|cord\s+prolapse)\b",
         r"\b(severe\s+pain|chest\s+pain|can.t\s+breathe|baby\s+not\s+moving)\b",
         r"\b(emergency|urgent|help\s+me|dying|ambulance|hospital\s+now)\b",
         r"\b(heavy\s+bleeding|blood\s+clots|water\s+broke|preterm\s+labor)\b",
+        # Kiswahili
+        r"\b(damu\s+nyingi|kutoka\s+damu|degedege|mshtuko|kupoteza\s+fahamu)\b",
+        r"\b(mtoto\s+hasogei|dharura|maumivu\s+makali|ugumu\s+wa\s+kupumua)\b",
+        r"\b(maji\s+yamevunjika|kuzaa\s+mapema|msaada\s+wa\s+haraka)\b",
     ],
     Intent.SYMPTOM_CHECK: [
+        # English
         r"\b(feeling|symptom|pain|ache|nausea|vomiting|swelling|headache)\b",
         r"\b(dizzy|faint|tired|fatigue|cramp|discharge|spotting|fever)\b",
         r"\b(is\s+it\s+normal|should\s+i\s+worry|what\s+does\s+it\s+mean)\b",
+        # Kiswahili
+        r"\b(ninajisikia|dalili|maumivu|kichefuchefu|kutapika|uvimbe|homa)\b",
+        r"\b(kizunguzungu|uchovu|tumbo\s+kuuma|kutokwa|madoa|ni\s+kawaida)\b",
+        r"\b(ninaumwa|kuna\s+tatizo|sijisikii\s+vizuri|mwili\s+wangu)\b",
     ],
     Intent.APPOINTMENT_BOOKING: [
+        # English
         r"\b(appointment|book|schedule|visit|clinic|anc|checkup|doctor)\b",
         r"\b(when\s+should\s+i|next\s+visit|how\s+often|prenatal\s+care)\b",
+        # Kiswahili
+        r"\b(miadi|kliniki|ziara|daktari|mkunga|kliniki\s+ya\s+uzazi|ANC)\b",
+        r"\b(niende\s+lini|ziara\s+ya\s+kliniki|huduma\s+ya\s+uzazi|kupanga)\b",
+        r"\b(hospitali|kituo\s+cha\s+afya|kutembelea\s+daktari)\b",
     ],
     Intent.NUTRITION_ADVICE: [
+        # English
         r"\b(eat|food|diet|nutrition|vitamin|iron|folic|supplement|meal)\b",
         r"\b(what\s+to\s+eat|healthy\s+food|avoid\s+eating|safe\s+to\s+eat)\b",
+        # Kiswahili
+        r"\b(kula|chakula|lishe|vitamini|chuma|asidi\s+ya\s+foliki|virutubisho)\b",
+        r"\b(nile\s+nini|chakula\s+bora|epuka\s+kula|salama\s+kula|mlo)\b",
+        r"\b(mboga|matunda|protini|kalsiamu|madini|maziwa|mayai|samaki)\b",
+        r"\b(njaa|kula\s+vizuri|lishe\s+bora|chakula\s+cha\s+ujauzito)\b",
     ],
     Intent.EMOTIONAL_SUPPORT: [
+        # English
         r"\b(sad|anxious|scared|worried|depressed|lonely|overwhelmed|stressed)\b",
         r"\b(feel\s+like|can.t\s+cope|too\s+much|breaking\s+down|crying)\b",
         r"\b(support|talk|listen|help\s+me\s+feel|not\s+okay)\b",
+        # Kiswahili
+        r"\b(huzuni|wasiwasi|hofu|msongo|upweke|nimechoka|ninalia)\b",
+        r"\b(sijisikii\s+vizuri|siwezi\s+kukabiliana|msaada|zungumza\s+nami)\b",
+        r"\b(nimepoteza\s+mtoto|kuharibika\s+kwa\s+mimba|huzuni\s+yangu)\b",
+        r"\b(ninajisikia\s+peke\s+yangu|hakuna\s+anayenielewa|nimechoshwa)\b",
     ],
     Intent.EDUCATION_REQUEST: [
+        # English
         r"\b(tell\s+me|explain|what\s+is|how\s+does|learn|information|about)\b",
         r"\b(week\s+\d+|trimester|development|baby\s+size|fetal\s+growth)\b",
+        # Kiswahili
+        r"\b(niambie|eleza|ni\s+nini|jinsi\s+gani|habari|maelezo|kuhusu)\b",
+        r"\b(wiki\s+ya\s+\d+|trimesta|ukuaji\s+wa\s+mtoto|ukubwa\s+wa\s+mtoto)\b",
+        r"\b(nataka\s+kujua|nifundishe|maswali\s+kuhusu\s+ujauzito)\b",
     ],
     Intent.MEDICATION_QUERY: [
+        # English
         r"\b(medicine|medication|drug|tablet|pill|safe\s+to\s+take|prescription)\b",
         r"\b(paracetamol|iron\s+tablet|folic\s+acid|antibiotic|dose)\b",
+        # Kiswahili
+        r"\b(dawa|tembe|kidonge|salama\s+kutumia|dawa\s+ya\s+daktari)\b",
+        r"\b(paracetamol|tembe\s+za\s+chuma|asidi\s+ya\s+foliki|antibiotiki|kipimo)\b",
+        r"\b(ninaweza\s+kutumia|dawa\s+gani|dawa\s+za\s+ujauzito)\b",
     ],
     Intent.FETAL_MOVEMENT: [
+        # English
         r"\b(baby\s+moving|kick|movement|fetal\s+movement|not\s+kicking)\b",
         r"\b(kick\s+count|baby\s+active|baby\s+quiet|no\s+movement)\b",
+        # Kiswahili
+        r"\b(mtoto\s+anasogea|mateke|mwendo\s+wa\s+mtoto|mtoto\s+hasogei)\b",
+        r"\b(kuhesabu\s+mateke|mtoto\s+ana\s+nguvu|mtoto\s+kimya|hakuna\s+mwendo)\b",
+        r"\b(mtoto\s+wangu\s+anacheza|mtoto\s+amekimya\s+sana)\b",
     ],
     Intent.LABOR_SIGNS: [
+        # English
         r"\b(labor|labour|contraction|water\s+broke|mucus\s+plug|dilation)\b",
         r"\b(am\s+i\s+in\s+labor|going\s+into\s+labor|birth|delivery)\b",
+        # Kiswahili
+        r"\b(mikazo|kujifungua|maji\s+yamevunjika|uchungu|kuzaa)\b",
+        r"\b(ninajifungua|dalili\s+za\s+kujifungua|wakati\s+wa\s+kuzaa)\b",
+        r"\b(tumbo\s+linakaza|maumivu\s+ya\s+kuzaa|hospitali\s+sasa)\b",
     ],
     Intent.GREETING: [
-        r"^(hi|hello|hey|good\s+(morning|afternoon|evening)|habari|bonjour|salut)\b",
-        r"\b(how\s+are\s+you|nice\s+to\s+meet|start|begin)\b",
+        # English + Kiswahili
+        r"^(hi|hello|hey|good\s+(morning|afternoon|evening))\b",
+        r"^(habari|mambo|hujambo|shikamoo|salama|karibu|salam)\b",
+        r"\b(habari\s+yako|habari\s+za\s+asubuhi|habari\s+za\s+jioni)\b",
+        r"\b(how\s+are\s+you|nice\s+to\s+meet|start|begin|nianze)\b",
     ],
 }
 
@@ -163,8 +213,26 @@ INTENT_PATTERNS: Dict[str, List[str]] = {
 EMERGENCY_KEYWORDS = {
     "en": ["bleeding", "seizure", "unconscious", "not breathing", "cord prolapse",
            "severe pain", "baby not moving", "heavy bleeding", "emergency"],
-    "sw": ["kutoka damu", "degedege", "kupoteza fahamu", "maumivu makali",
-           "mtoto hasogei", "dharura", "damu nyingi"],
+    "sw": [
+        # Bleeding
+        "kutoka damu", "damu nyingi", "damu ukeni", "kutokwa na damu",
+        # Seizure
+        "degedege", "mshtuko", "kupoteza fahamu", "kuzimia",
+        # Pain
+        "maumivu makali", "maumivu ya tumbo", "maumivu ya kichwa makali",
+        # Fetal
+        "mtoto hasogei", "mtoto haonekani kusogea", "hakuna mwendo wa mtoto",
+        # Emergency
+        "dharura", "msaada wa haraka", "nenda hospitali", "piga simu 999",
+        # Breathing
+        "ugumu wa kupumua", "kupumua kwa shida",
+        # Vision
+        "maono mabaya", "kuona vibaya ghafla",
+        # Water breaking
+        "maji yamevunjika", "mfuko umevunjika",
+        # Preterm
+        "kuzaa mapema", "mikazo kabla ya wakati",
+    ],
     "fr": ["saignement", "convulsion", "inconscient", "douleur severe",
            "bebe ne bouge pas", "urgence", "hemorragie"],
     "ar": ["نزيف", "تشنج", "فقدان الوعي", "ألم شديد", "الطفل لا يتحرك", "طوارئ"],
@@ -222,7 +290,7 @@ WEEKLY_EDUCATION: Dict[int, Dict[str, str]] = {
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPTS: Dict[str, str] = {
-    "en": """You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform, 
+    "en": """You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform,
 serving pregnant women and new mothers primarily in Africa.
 
 Your core principles:
@@ -245,20 +313,64 @@ Emergency protocol: If you detect ANY emergency symptoms, immediately say:
 
 You are not a doctor. You provide information and support, not diagnosis.""",
 
-    "sw": """Wewe ni MAMA, msaidizi wa AI wa afya ya uzazi kwa jukwaa la MAMA-LENS,
-unaohudumia wanawake wajawazito na mama wapya hasa Afrika.
+    "sw": """Wewe ni MAMA, msaidizi wa AI wa afya ya uzazi kwa jukwaa la MAMA-LENS.
+Unahudumia wanawake wajawazito na mama wapya Afrika Mashariki, hasa Kenya, Tanzania na Uganda.
+
+LUGHA: Jibu DAIMA kwa Kiswahili safi na rahisi. Tumia maneno ya kawaida ya Kiswahili.
+Epuka maneno magumu ya kimatibabu — eleza kwa lugha ya kila siku.
 
 Kanuni zako za msingi:
-- Kuwa na upole, bila hukumu, na kuzingatia utamaduni
-- Tumia lugha rahisi na wazi inayofaa kiwango cha elimu cha mtumiaji
-- Usibadilishe ushauri wa kitaalamu wa matibabu - daima himiza ziara za kliniki
-- Gundua dharura mara moja na upandishe kwa haraka
+- Kuwa na upole, huruma, na kuzingatia utamaduni wa Afrika Mashariki
+- Tumia lugha rahisi inayofaa kiwango cha elimu cha mtumiaji
+- Usibadilishe ushauri wa daktari — daima himiza ziara za kliniki ya uzazi (ANC)
+- Gundua dharura mara moja na toa msaada wa haraka
 - Heshimu desturi za kienyeji na mienendo ya familia
+- Zingatia vikwazo vya rasilimali (upatikanaji mdogo wa huduma za afya, gharama)
+- Sherehekea hatua muhimu za ujauzito na toa moyo
+
+Msamiati muhimu wa Kiswahili wa afya ya uzazi:
+- Ujauzito = pregnancy
+- Kujifungua = giving birth / delivery
+- Kliniki ya uzazi / ANC = antenatal care clinic
+- Mkunga = midwife
+- Daktari wa uzazi = obstetrician/gynecologist
+- Mtoto tumboni = unborn baby / fetus
+- Maumivu ya kujifungua = labour pains / contractions
+- Damu nyingi = heavy bleeding
+- Degedege = seizure / convulsions
+- Shinikizo la damu = blood pressure
+- Sukari ya damu = blood sugar / glucose
+- Upungufu wa damu = anemia
+- Asidi ya foliki = folic acid
+- Chuma / madini ya chuma = iron
+- Vitamini = vitamins
+- Chanjo = vaccination
+- Ultrasound / ekografia = ultrasound scan
+- Wiki za ujauzito = weeks of pregnancy
+- Trimesta = trimester
+- Kichefuchefu = nausea / morning sickness
+- Uvimbe = swelling / edema
+- Maumivu ya kichwa = headache
+- Maono mabaya = vision changes / blurred vision
+- Mwendo wa mtoto = fetal movement / baby kicks
+- Kuhesabu mateke = kick counting
+- Kuzaa mapema = preterm birth
+- Preeclampsia = preeclampsia (shinikizo la damu + protini kwenye mkojo)
+- Kisukari cha ujauzito = gestational diabetes
+- Kuharibika kwa mimba = miscarriage
+- Huzuni baada ya kupoteza mtoto = grief after pregnancy loss
 
 Wakati wa kujibu:
-- Weka majibu mafupi kwa SMS/USSD (chini ya herufi 160 kama njia ni SMS)
-- Tumia alama za orodha kwa orodha inapofaa
-- Daima maliza na neno la kutia moyo au swali la ufuatiliaji""",
+- Jibu kwa Kiswahili DAIMA isipokuwa mtumiaji aandike kwa lugha nyingine
+- Weka majibu mafupi kwa SMS/USSD (chini ya herufi 160)
+- Tumia orodha kwa hatua na maelekezo
+- Maliza na neno la kutia moyo au swali la ufuatiliaji
+- Kama hujui, sema hivyo na pendekeza kuona daktari au mkunga
+
+Itifaki ya dharura: Ukigundua dalili YOYOTE ya dharura, sema mara moja:
+"DHARURA: Tafadhali nenda kituo cha afya kilicho karibu SASA HIVI au piga simu 999/112."
+
+Wewe si daktari. Unatoa taarifa na msaada, si utambuzi wa magonjwa.""",
 }
 
 
@@ -460,25 +572,28 @@ class ConversationalAI:
     ) -> str:
         responses = {
             "en": (
-                "URGENT: This sounds like a medical emergency. "
+                "🚨 URGENT: This sounds like a medical emergency. "
                 "Please go to the nearest health facility IMMEDIATELY "
-                "or call emergency services. Do not wait. "
+                "or call emergency services (999 / 112). Do not wait. "
                 "If you cannot travel, call someone to help you now."
             ),
             "sw": (
-                "DHARURA: Hii inaonekana kama dharura ya kimatibabu. "
-                "Tafadhali nenda kituo cha afya kilicho karibu MARA MOJA "
-                "au piga simu huduma za dharura. Usisubiri."
+                "🚨 DHARURA: Hii inaonekana kama dharura ya kimatibabu.\n\n"
+                "Tafadhali FANYA HIVI SASA:\n"
+                "1. Nenda kituo cha afya kilicho karibu MARA MOJA\n"
+                "2. Au piga simu: 999 au 112\n"
+                "3. Mwambie mtu wa karibu nawe akusaidie\n\n"
+                "USISUBIRI. Maisha yako na ya mtoto wako ni muhimu sana."
             ),
             "fr": (
-                "URGENT: Cela ressemble a une urgence medicale. "
+                "🚨 URGENT: Cela ressemble a une urgence medicale. "
                 "Veuillez vous rendre IMMEDIATEMENT a l etablissement de sante "
-                "le plus proche ou appeler les services d urgence."
+                "le plus proche ou appeler les services d urgence (999/112)."
             ),
             "ar": (
-                "عاجل: يبدو هذا حالة طوارئ طبية. "
+                "🚨 عاجل: يبدو هذا حالة طوارئ طبية. "
                 "يرجى التوجه فورا إلى أقرب مرفق صحي "
-                "أو الاتصال بخدمات الطوارئ. لا تنتظري."
+                "أو الاتصال بخدمات الطوارئ 999/112."
             ),
         }
         return responses.get(language, responses["en"])
@@ -566,51 +681,148 @@ class ConversationalAI:
     def _rule_based_response(
         self, intent: Intent, language: str, literacy_level: str
     ) -> str:
-        """Fallback rule-based responses by intent."""
+        """Fallback rule-based responses by intent — full Kiswahili support."""
         responses: Dict[Intent, Dict[str, str]] = {
             Intent.GREETING: {
                 "en": "Hello! I am MAMA, your maternal health assistant. How are you feeling today? How can I help you?",
-                "sw": "Habari! Mimi ni MAMA, msaidizi wako wa afya ya uzazi. Unajisikiaje leo? Ninaweza kukusaidia vipi?",
+                "sw": (
+                    "Habari! Mimi ni MAMA, msaidizi wako wa afya ya uzazi. 💚\n"
+                    "Unajisikiaje leo? Ninaweza kukusaidia vipi?\n\n"
+                    "Unaweza kuniuliza kuhusu:\n"
+                    "• Dalili za ujauzito\n"
+                    "• Lishe na chakula\n"
+                    "• Ziara za kliniki (ANC)\n"
+                    "• Mwendo wa mtoto\n"
+                    "• Msaada wa kihisia\n\n"
+                    "Niko hapa kukusaidia!"
+                ),
                 "fr": "Bonjour! Je suis MAMA, votre assistante de sante maternelle. Comment vous sentez-vous aujourd hui?",
             },
             Intent.SYMPTOM_CHECK: {
                 "en": "I hear you are experiencing some symptoms. Can you describe them in more detail? When did they start? Are they getting worse?",
-                "sw": "Nasikia una dalili fulani. Unaweza kuzielezea kwa undani zaidi? Zilianza lini?",
+                "sw": (
+                    "Nakusikia una dalili fulani. Niambie zaidi:\n\n"
+                    "• Dalili zinaanza lini?\n"
+                    "• Zinazidi kuwa mbaya?\n"
+                    "• Uko wiki ngapi za ujauzito?\n\n"
+                    "⚠️ Nenda hospitali MARA MOJA ukiwa na:\n"
+                    "• Damu nyingi ukeni\n"
+                    "• Maumivu makali ya kichwa\n"
+                    "• Mtoto hasogei (baada ya wiki 28)\n"
+                    "• Degedege au kuzimia\n\n"
+                    "Elezea dalili zako na nitakusaidia."
+                ),
                 "fr": "Je vous entends avoir des symptomes. Pouvez-vous les decrire plus en detail?",
             },
             Intent.NUTRITION_ADVICE: {
                 "en": "Good nutrition is vital during pregnancy. Focus on: iron-rich foods (beans, dark leafy greens, meat), folic acid (green vegetables), protein (eggs, fish, legumes), and calcium (milk, yogurt). Drink plenty of clean water.",
-                "sw": "Lishe bora ni muhimu wakati wa ujauzito. Kula: vyakula vyenye chuma (maharagwe, mboga za majani), asidi ya foliki (mboga za kijani), protini (mayai, samaki), na kalsiamu (maziwa).",
+                "sw": (
+                    "Lishe bora ni muhimu sana wakati wa ujauzito! 🥗\n\n"
+                    "✅ Kula kila siku:\n"
+                    "• Chuma: maharagwe, mboga za majani (sukuma wiki, spinachi), nyama, dagaa\n"
+                    "• Asidi ya foliki: mboga za kijani, mayai, karanga\n"
+                    "• Protini: mayai, samaki, kuku, maharagwe, dengu\n"
+                    "• Kalsiamu: maziwa, mtindi, mboga za majani\n"
+                    "• Maji: glasi 8-10 kila siku\n\n"
+                    "❌ Epuka:\n"
+                    "• Pombe (kabisa)\n"
+                    "• Nyama mbichi au isiyopikwa vizuri\n"
+                    "• Chai/kahawa nyingi sana\n"
+                    "• Vyakula visivyo na usafi\n\n"
+                    "💊 Chukua tembe za chuma na asidi ya foliki kila siku kama ilivyoagizwa na daktari."
+                ),
             },
             Intent.APPOINTMENT_BOOKING: {
                 "en": "Regular ANC visits are very important. WHO recommends at least 8 visits during pregnancy. Your next visit should be scheduled based on your current week. Would you like help finding a nearby clinic?",
-                "sw": "Ziara za kliniki za kawaida ni muhimu sana. WHO inapendekeza angalau ziara 8 wakati wa ujauzito.",
+                "sw": (
+                    "Ziara za kliniki ya uzazi (ANC) ni muhimu sana! 🏥\n\n"
+                    "WHO inapendekeza angalau ziara 8:\n"
+                    "• Wiki 12 — ziara ya kwanza\n"
+                    "• Wiki 20 — ultrasound ya anatomy\n"
+                    "• Wiki 26, 30, 34, 36, 38, 40\n\n"
+                    "📋 Kila ziara: pima shinikizo la damu, uzito, na afya ya mtoto.\n\n"
+                    "Lete kadi yako ya ANC kila ziara.\n"
+                    "Je, unahitaji msaada kupata kliniki karibu nawe?"
+                ),
             },
             Intent.EMOTIONAL_SUPPORT: {
                 "en": "I hear you, and your feelings are completely valid. Pregnancy can be an emotional journey. You are not alone. Would you like to talk more about how you are feeling?",
-                "sw": "Nakusikia, na hisia zako ni za kweli kabisa. Ujauzito unaweza kuwa safari ya kihisia. Huko peke yako.",
+                "sw": (
+                    "Nakusikia, na hisia zako ni za kweli kabisa. 💚\n\n"
+                    "Ujauzito unaweza kuleta hisia nyingi — furaha, wasiwasi, hofu, na huzuni. "
+                    "Hizi zote ni za kawaida.\n\n"
+                    "Huko peke yako. Niko hapa kukusikia.\n\n"
+                    "Ungependa kuzungumza zaidi kuhusu unavyohisi?\n\n"
+                    "Kama unahisi huzuni kali au wasiwasi mkubwa, "
+                    "tafadhali zungumza na mkunga wako au daktari. "
+                    "Unastahili msaada. 🌸"
+                ),
             },
             Intent.FETAL_MOVEMENT: {
                 "en": "Fetal movements are important to monitor. After 28 weeks, you should feel at least 10 movements in 2 hours. If you notice reduced movement, contact your healthcare provider immediately.",
-                "sw": "Mwendo wa mtoto ni muhimu kufuatilia. Baada ya wiki 28, unapaswa kuhisi angalau mwendo 10 kwa masaa 2.",
+                "sw": (
+                    "Mwendo wa mtoto ni muhimu sana kufuatilia! 👶\n\n"
+                    "Baada ya wiki 28:\n"
+                    "• Unapaswa kuhisi angalau mateke 10 kwa masaa 2\n"
+                    "• Fanya hivi baada ya kula (mtoto huwa na nguvu zaidi)\n"
+                    "• Lala upande wa kushoto na uhesabu mateke\n\n"
+                    "⚠️ Nenda hospitali MARA MOJA kama:\n"
+                    "• Hakuna mwendo kwa masaa 2+\n"
+                    "• Mwendo umepungua sana kuliko kawaida\n\n"
+                    "Hii inaweza kuwa ishara ya mtoto kuhitaji msaada."
+                ),
             },
             Intent.LABOR_SIGNS: {
                 "en": "Signs of labor include: regular contractions (every 5 minutes), water breaking, bloody show, and strong back pain. If you are before 37 weeks, go to hospital immediately as this may be preterm labor.",
-                "sw": "Dalili za kujifungua ni: mikazo ya kawaida (kila dakika 5), maji kuvunjika, damu kidogo, na maumivu ya mgongo.",
+                "sw": (
+                    "Dalili za kujifungua ni:\n\n"
+                    "✅ Dalili za kawaida:\n"
+                    "• Mikazo ya kawaida (kila dakika 5, kwa saa 1+)\n"
+                    "• Maji kuvunjika (mfuko wa mtoto)\n"
+                    "• Damu kidogo na kamasi ukeni\n"
+                    "• Maumivu ya mgongo wa chini\n\n"
+                    "🚨 Nenda hospitali MARA MOJA kama:\n"
+                    "• Uko chini ya wiki 37 (kuzaa mapema)\n"
+                    "• Damu nyingi\n"
+                    "• Mtoto hasogei\n"
+                    "• Maumivu makali sana\n\n"
+                    "Je, uko wiki ngapi za ujauzito sasa hivi?"
+                ),
             },
             Intent.MEDICATION_QUERY: {
                 "en": "Always consult your healthcare provider before taking any medication during pregnancy. Iron and folic acid supplements are generally safe and recommended. Avoid NSAIDs like ibuprofen unless prescribed.",
-                "sw": "Daima wasiliana na mtoa huduma wako wa afya kabla ya kuchukua dawa yoyote wakati wa ujauzito.",
+                "sw": (
+                    "Kuhusu dawa wakati wa ujauzito:\n\n"
+                    "✅ Salama (kama ilivyoagizwa):\n"
+                    "• Tembe za chuma (iron) — kila siku\n"
+                    "• Asidi ya foliki — hasa miezi 3 ya kwanza\n"
+                    "• Paracetamol — kwa maumivu madogo\n"
+                    "• Dawa za malaria (IPTp-SP) — kutoka wiki 16\n\n"
+                    "❌ Epuka bila ushauri wa daktari:\n"
+                    "• Ibuprofen, aspirin (NSAIDs)\n"
+                    "• Dawa za mitishamba zisizojulikana\n"
+                    "• Dawa yoyote bila agizo la daktari\n\n"
+                    "⚠️ DAIMA wasiliana na daktari au mkunga wako kabla ya kutumia dawa yoyote."
+                ),
             },
             Intent.GENERAL_QUESTION: {
                 "en": "Thank you for your question. I am here to help with your maternal health journey. Could you tell me more about what you would like to know?",
-                "sw": "Asante kwa swali lako. Niko hapa kukusaidia katika safari yako ya afya ya uzazi.",
+                "sw": (
+                    "Asante kwa swali lako. 💚\n"
+                    "Niko hapa kukusaidia katika safari yako ya ujauzito.\n\n"
+                    "Unaweza kuniuliza kuhusu:\n"
+                    "• Dalili na afya yako\n"
+                    "• Lishe na chakula\n"
+                    "• Ziara za kliniki\n"
+                    "• Ukuaji wa mtoto\n"
+                    "• Msaada wa kihisia\n\n"
+                    "Niambie zaidi — ninakusaidia!"
+                ),
             },
         }
 
         intent_responses = responses.get(intent, responses[Intent.GENERAL_QUESTION])
         response = intent_responses.get(language, intent_responses.get("en", ""))
-
         return response
 
     # ------------------------------------------------------------------
