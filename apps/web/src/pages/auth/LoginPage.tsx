@@ -7,7 +7,6 @@ import { Eye, EyeOff, Phone } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { authAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
-import aphrcLogo from "../../assets/aphrc.png";
 
 interface LoginForm {
   identifier: string;
@@ -158,16 +157,9 @@ export default function LoginPage() {
         <p className="text-calm-700 text-xs text-center">
           Your health data is encrypted and protected. We never share your information without consent.
         </p>
-        <div className="flex items-center justify-center gap-3 mt-3 pt-3 border-t border-calm-200">
-          <span className="text-gray-500 text-xs whitespace-nowrap">Developed in collaboration with</span>
-          <div className="bg-white border border-gray-200 rounded-lg p-1.5 flex items-center justify-center">
-            <img
-              src={aphrcLogo}
-              alt="APHRC — African Population and Health Research Center"
-              className="h-8 w-auto object-contain block"
-            />
-          </div>
-        </div>
+        <p className="text-gray-400 text-xs text-center mt-3 pt-3 border-t border-calm-200">
+          Developed in collaboration with Africa Population and Health Research Center and The Hash Project &copy; 2026
+        </p>
       </div>
     </div>
   );
