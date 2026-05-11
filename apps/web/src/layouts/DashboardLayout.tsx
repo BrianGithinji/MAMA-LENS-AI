@@ -1,5 +1,5 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
-import { Home, Activity, MessageCircle, Calendar, User } from "lucide-react";
+import { Home, Activity, MessageCircle, Calendar, User, BookHeart } from "lucide-react";
 import { clsx } from "clsx";
 import Logo from "../components/brand/Logo";
 
@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { icon: Home, label: "Home", href: "/dashboard" },
   { icon: Activity, label: "Risk", href: "/risk-assessment" },
   { icon: MessageCircle, label: "MAMA AI", href: "/avatar" },
-  { icon: Calendar, label: "Appointments", href: "/appointments" },
+  { icon: BookHeart, label: "Journal", href: "/daily-journal" },
   { icon: User, label: "Profile", href: "/profile" },
 ];
 

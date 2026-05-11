@@ -130,6 +130,11 @@ export const healthRecordsAPI = {
   logVitals: (data: object) => apiClient.post("/health-records/vitals", data),
 };
 
+export const dailyJournalAPI = {
+  getEntries: (limit?: number) => apiClient.get(`/health-records/daily-journal?limit=${limit || 30}`),
+  logEntry: (data: object) => apiClient.post("/health-records/daily-journal", data),
+};
+
 export const communityAPI = {
   getPosts: (topic?: string) =>
     apiClient.get(`/messages/community${topic && topic !== "all" ? `?topic=${topic}` : ""}`),

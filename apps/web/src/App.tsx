@@ -17,6 +17,7 @@ import AvatarChatPage from "./pages/avatar/AvatarChatPage";
 import FacilitiesMapPage from "./pages/facilities/FacilitiesMapPage";
 import EducationPage from "./pages/education/EducationPage";
 import HealthRecordsPage from "./pages/health/HealthRecordsPage";
+import DailyJournalPage from "./pages/health/DailyJournalPage";
 import AppointmentsPage from "./pages/appointments/AppointmentsPage";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
 import ProfilePage from "./pages/profile/ProfilePage";
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="/facilities" element={<FacilitiesMapPage />} />
         <Route path="/education" element={<EducationPage />} />
         <Route path="/health-records" element={<HealthRecordsPage />} />
+        <Route path="/daily-journal" element={<DailyJournalPage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />

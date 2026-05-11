@@ -1,8 +1,20 @@
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends
+from typing import Optional, List
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 from app.core.database import get_db
 from app.api.v1.endpoints.auth import get_current_active_user
+
+
+class DailyJournalEntry(BaseModel):
+    mood: str = Field(..., description="Overall mood: great/good/okay/low/bad")
+    energy_level: int = Field(..., ge=1, le=10, description="Energy level 1-10")
+    symptoms: List[str] = Field(default=[], description="List of symptoms experienced")
+    pain_level: Optional[int] = Field(None, ge=0, le=10, description="Pain level 0-10")
+    sleep_hours: Optional[float] = Field(None, description="Hours of sleep")
+    notes: Optional[str] = Field(None, max_length=1000, description="Free-text notes for doctor")
+    concerns: Optional[str] = Field(None, max_length=500, description="Any concerns to flag for doctor")
 
 router = APIRouter()
 
@@ -82,4 +94,58 @@ async def get_vitals(
             "created_at": v["created_at"],
         }
         for v in vitals
+    ]
+
+
+@router.post("/daily-journal", status_code=201)
+async def log_daily_journal(
+    entry: DailyJournalEntry,
+    current_user: dict = Depends(get_current_active_user),
+):
+    db = get_db()
+    now = datetime.now(timezone.utc).isoformat()
+    entry_id = str(uuid.uuid4())
+    doc = {
+        "_id": entry_id,
+        "user_id": current_user["_id"],
+        "date": now[:10],  # YYYY-MM-DD for easy daily lookup
+        "mood": entry.mood,
+        "energy_level": entry.energy_level,
+        "symptoms": entry.symptoms,
+        "pain_level": entry.pain_level,
+        "sleep_hours": entry.sleep_hours,
+        "notes": entry.notes,
+        "concerns": entry.concerns,
+        "created_at": now,
+    }
+    await db.daily_journal.insert_one(doc)
+    return {"id": entry_id, "date": doc["date"], "created_at": now}
+
+
+@router.get("/daily-journal")
+async def get_daily_journal(
+    limit: int = Query(30, le=90),
+    current_user: dict = Depends(get_current_active_user),
+):
+    db = get_db()
+    cursor = db.daily_journal.find(
+        {"user_id": current_user["_id"]},
+        sort=[("created_at", -1)],
+        limit=limit,
+    )
+    entries = await cursor.to_list(length=limit)
+    return [
+        {
+            "id": e["_id"],
+            "date": e["date"],
+            "mood": e["mood"],
+            "energy_level": e["energy_level"],
+            "symptoms": e.get("symptoms", []),
+            "pain_level": e.get("pain_level"),
+            "sleep_hours": e.get("sleep_hours"),
+            "notes": e.get("notes"),
+            "concerns": e.get("concerns"),
+            "created_at": e["created_at"],
+        }
+        for e in entries
     ]
