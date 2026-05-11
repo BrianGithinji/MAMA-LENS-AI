@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — User Profile Endpoints (MongoDB)"""
 from fastapi import APIRouter, Depends
 from datetime import datetime, timezone
 from app.core.database import get_db

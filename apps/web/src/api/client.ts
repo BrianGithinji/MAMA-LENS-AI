@@ -1,8 +1,3 @@
-/**
- * MAMA-LENS AI — API Client
- * Axios instance with auth interceptors and error handling
- */
-
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../store/authStore";
 
@@ -16,7 +11,6 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor — attach auth token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const { accessToken } = useAuthStore.getState();
@@ -28,7 +22,6 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor — handle token refresh
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -63,8 +56,6 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// ─── API Functions ────────────────────────────────────────────────────────────
 
 export const authAPI = {
   register: (data: object) => apiClient.post("/auth/register", data),
@@ -137,4 +128,14 @@ export const notificationsAPI = {
 export const healthRecordsAPI = {
   getAll: () => apiClient.get("/health-records/"),
   logVitals: (data: object) => apiClient.post("/health-records/vitals", data),
+};
+
+export const communityAPI = {
+  getPosts: (topic?: string) =>
+    apiClient.get(`/messages/community${topic && topic !== "all" ? `?topic=${topic}` : ""}`),
+  createPost: (data: { content: string; topic: string; is_anonymous: boolean }) =>
+    apiClient.post("/messages/community", data),
+  replyToPost: (postId: string, data: { content: string; is_anonymous: boolean }) =>
+    apiClient.post(`/messages/community/${postId}/reply`, data),
+  deletePost: (postId: string) => apiClient.delete(`/messages/community/${postId}`),
 };

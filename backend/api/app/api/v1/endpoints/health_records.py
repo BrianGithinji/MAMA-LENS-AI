@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Health Records Endpoints (MongoDB)"""
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends

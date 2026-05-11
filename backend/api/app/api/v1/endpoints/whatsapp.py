@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — WhatsApp Webhook Endpoints (MongoDB)"""
 from fastapi import APIRouter, Depends, Request, HTTPException, BackgroundTasks
 from app.core.config import settings
 

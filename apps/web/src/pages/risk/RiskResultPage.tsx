@@ -1,6 +1,3 @@
-/**
- * MAMA-LENS AI — Risk Assessment Result Page
- */
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -16,7 +13,7 @@ export default function RiskResultPage() {
     enabled: !!id,
   });
 
-  if (isLoading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin text-4xl">⟳</div></div>;
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin text-4xl">...</div></div>;
   if (!assessment) return <div className="p-6 text-center text-gray-500">Assessment not found</div>;
 
   const riskScores = [

@@ -1,9 +1,3 @@
-/**
- * MAMA-LENS AI — Risk Assessment Form
- * Multi-step maternal health risk assessment
- */
-
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -92,7 +86,7 @@ export default function RiskAssessmentPage() {
     onSuccess: (response) => {
       const { assessment_id, is_emergency } = response.data;
       if (is_emergency) {
-        toast.error("⚠️ Emergency detected! Please seek immediate medical care.", { duration: 8000 });
+        toast.error("Emergency detected. Please seek immediate medical care.", { duration: 8000 });
       } else {
         toast.success("Assessment complete!");
       }
@@ -182,7 +176,7 @@ export default function RiskAssessmentPage() {
               <StepHeader step={STEPS[1]} />
               <div className="bg-calm-50 border border-calm-200 rounded-2xl p-4 mt-4 mb-6">
                 <p className="text-calm-700 text-sm">
-                  💡 If you don't have these readings, visit your nearest clinic or community health worker.
+                  If you don't have these readings, visit your nearest clinic or community health worker.
                 </p>
               </div>
               <div className="space-y-4">
@@ -312,7 +306,7 @@ export default function RiskAssessmentPage() {
               {selectedSymptoms.some(s => ["heavy_bleeding", "seizure", "no_fetal_movement", "chest_pain"].includes(s)) && (
                 <div className="mt-4 bg-emergency-50 border border-emergency-200 rounded-2xl p-4">
                   <p className="text-emergency-700 text-sm font-medium">
-                    ⚠️ You have selected emergency symptoms. Please seek medical care immediately after completing this assessment.
+                    You have selected emergency symptoms. Please seek medical care immediately after completing this assessment.
                   </p>
                 </div>
               )}
@@ -337,7 +331,7 @@ export default function RiskAssessmentPage() {
             <button type="submit" disabled={assessMutation.isPending}
               className="flex-1 py-4 rounded-2xl bg-primary-500 text-white font-bold flex items-center justify-center gap-2 shadow-glow-primary disabled:opacity-60">
               {assessMutation.isPending ? (
-                <><span className="animate-spin">⟳</span> Analyzing...</>
+                <><span className="animate-spin">...</span> Analyzing...</>
               ) : (
                 <><Activity className="w-4 h-4" /> Get Assessment</>
               )}

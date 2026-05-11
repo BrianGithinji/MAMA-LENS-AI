@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Admin Endpoints (MongoDB)"""
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.database import get_db
 from app.api.v1.endpoints.auth import get_current_active_user

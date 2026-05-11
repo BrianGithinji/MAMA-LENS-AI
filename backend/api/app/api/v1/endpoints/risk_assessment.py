@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Risk Assessment Endpoints (MongoDB)"""
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -12,7 +11,6 @@ from app.api.v1.endpoints.auth import get_current_active_user
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-# Import risk engine — bundled inside the backend package for Render compatibility
 try:
     from app.risk_engine import MaternalRiskEngine, RiskInput, NutritionStatus
     _RISK_ENGINE_AVAILABLE = True
@@ -121,8 +119,8 @@ async def assess_risk(
         background_tasks.add_task(_log_emergency, current_user["_id"], result.emergency_type)
 
     risk_labels = {
-        "low": "✅ Low Risk", "moderate": "⚠️ Moderate Risk",
-        "high": "🔴 High Risk", "emergency": "🚨 Emergency",
+        "low": "Low Risk", "moderate": "Moderate Risk",
+        "high": "High Risk", "emergency": "Emergency",
     }
 
     logger.info("Risk assessment", user_id=current_user["_id"], level=result.overall_risk_level.value)
@@ -188,8 +186,8 @@ async def get_assessment(
         raise HTTPException(status_code=404, detail="Assessment not found")
 
     risk_labels = {
-        "low": "✅ Low Risk", "moderate": "⚠️ Moderate Risk",
-        "high": "🔴 High Risk", "emergency": "🚨 Emergency",
+        "low": "Low Risk", "moderate": "Moderate Risk",
+        "high": "High Risk", "emergency": "Emergency",
     }
     return {
         "assessment_id": a["_id"],

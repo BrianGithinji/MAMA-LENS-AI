@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Notification Endpoints (MongoDB)"""
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from app.core.database import get_db

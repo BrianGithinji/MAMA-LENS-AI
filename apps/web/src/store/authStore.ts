@@ -1,8 +1,3 @@
-/**
- * MAMA-LENS AI — Authentication State Store
- * Zustand store for auth state management with persistence
- */
-
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -24,7 +19,6 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
 
-  // Actions
   login: (tokens: { access_token: string; refresh_token: string }, user: User) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;

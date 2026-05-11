@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Healthcare Facility Endpoints (MongoDB)"""
 import math
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, HTTPException

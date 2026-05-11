@@ -1,10 +1,8 @@
-"""MAMA-LENS AI — Education Endpoints (MongoDB)"""
 from fastapi import APIRouter, Depends, Query
 from app.api.v1.endpoints.auth import get_current_active_user
 
 router = APIRouter()
 
-# Import AI modules bundled inside the backend package
 try:
     from app.conversation_ai import ConversationalAI
     from app.recommendation_engine import RecommendationEngine, UserProfile

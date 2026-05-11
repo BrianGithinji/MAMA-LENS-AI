@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Telemedicine Endpoints (MongoDB)"""
 import secrets
 import uuid
 from datetime import datetime, timezone

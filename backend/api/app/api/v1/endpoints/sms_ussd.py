@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — SMS & USSD Endpoints (MongoDB)"""
 from fastapi import APIRouter, Form, Request, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from app.core.config import settings

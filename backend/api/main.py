@@ -1,6 +1,3 @@
-"""
-MAMA-LENS AI — FastAPI Application Entry Point
-"""
 import time
 from contextlib import asynccontextmanager
 
@@ -45,8 +42,6 @@ async def lifespan(app: FastAPI):
         pass
 
 
-# ── App ───────────────────────────────────────────────────────────────────────
-
 app = FastAPI(
     title="MAMA-LENS AI",
     description="Maternal Assessment & Monitoring for Early Loss Support",
@@ -55,8 +50,6 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
-
-# ── CORS — must be first middleware, exact origins, no trailing slash ─────────
 
 origins = [
     "https://mama-lens.netlify.app",
@@ -76,7 +69,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Exception handler ─────────────────────────────────────────────────────────
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -86,7 +78,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"success": False, "error": "INTERNAL_SERVER_ERROR", "message": str(exc)},
     )
 
-# ── Routes ────────────────────────────────────────────────────────────────────
 
 app.include_router(api_router, prefix="/api/v1")
 

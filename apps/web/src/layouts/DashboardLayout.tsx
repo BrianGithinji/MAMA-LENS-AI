@@ -1,7 +1,3 @@
-/**
- * MAMA-LENS AI — Dashboard Layout with Bottom Navigation
- */
-
 import { Outlet, NavLink, Link } from "react-router-dom";
 import { Home, Activity, MessageCircle, Calendar, User } from "lucide-react";
 import { clsx } from "clsx";
@@ -18,12 +14,10 @@ const NAV_ITEMS = [
 export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-warm-50">
-      {/* Main content */}
       <main className="pb-20">
         <Outlet />
       </main>
 
-      {/* Bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area-pb z-50">
         <div className="flex items-center justify-around px-2 py-2 max-w-lg mx-auto">
           {NAV_ITEMS.map(({ icon: Icon, label, href }) => (

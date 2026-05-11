@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Authentication Endpoints (MongoDB)"""
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -20,8 +19,6 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
-
-# ─── Schemas ─────────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
     first_name: str
@@ -47,7 +44,7 @@ class LoginRequest(BaseModel):
 
 
 class GoogleLoginRequest(BaseModel):
-    credential: str   # Google ID token from the frontend
+    credential: str
 
 
 class TokenResponse(BaseModel):
@@ -64,8 +61,6 @@ class TokenResponse(BaseModel):
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
-
-# ─── Dependency ──────────────────────────────────────────────────────────────
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     try:
@@ -89,8 +84,6 @@ async def get_current_active_user(current_user: dict = Depends(get_current_user)
     return current_user
 
 
-# ─── Helpers ─────────────────────────────────────────────────────────────────
-
 def _make_tokens(user_id: str, role: str, first_name: str, last_name: str) -> dict:
     return {
         "access_token": create_access_token(user_id, extra_claims={"role": role}),
@@ -102,8 +95,6 @@ def _make_tokens(user_id: str, role: str, first_name: str, last_name: str) -> di
         "last_name": last_name,
     }
 
-
-# ─── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(request: RegisterRequest):
@@ -143,7 +134,6 @@ async def register(request: RegisterRequest):
         "updated_at": now,
     }
 
-    # Only store fields that have actual values — never store null
     if request.phone_number:
         user_doc["phone_number"] = request.phone_number
     if request.email:
@@ -164,9 +154,6 @@ async def register(request: RegisterRequest):
 
 @router.post("/google")
 async def google_login(request: GoogleLoginRequest):
-    """
-    Verify a Google ID token and sign in or auto-register the user.
-    """
     try:
         import base64, json as _json, time as _time
 
@@ -180,7 +167,6 @@ async def google_login(request: GoogleLoginRequest):
 
         idinfo = _json.loads(_b64_decode(parts[1]))
 
-        # Log what we received for debugging
         logger.info("Google token payload",
             aud=idinfo.get("aud"),
             iss=idinfo.get("iss"),
@@ -190,16 +176,13 @@ async def google_login(request: GoogleLoginRequest):
             configured_client_id=settings.GOOGLE_CLIENT_ID[:20],
         )
 
-        # Validate issuer
         iss = idinfo.get("iss", "")
         if iss not in ("accounts.google.com", "https://accounts.google.com"):
             raise ValueError(f"Invalid issuer: {iss}")
 
-        # Validate expiry
         if idinfo.get("exp", 0) < _time.time():
             raise ValueError("Token expired")
 
-        # Validate audience — accept if client_id matches OR if no client_id configured
         aud = idinfo.get("aud", "")
         configured = settings.GOOGLE_CLIENT_ID.strip()
         if configured:
@@ -224,14 +207,12 @@ async def google_login(request: GoogleLoginRequest):
 
     db = get_db()
 
-    # Find existing user by google_id or email
     query = {"$or": [{"google_id": google_id}]}
     if email:
         query["$or"].append({"email": email})
     user = await db.users.find_one(query)
 
     if user:
-        # Update google_id if signing in via email match
         if not user.get("google_id"):
             await db.users.update_one(
                 {"_id": user["_id"]},
@@ -243,7 +224,6 @@ async def google_login(request: GoogleLoginRequest):
             user.get("first_name", ""), user.get("last_name", "")
         )
 
-    # Auto-register new Google user
     user_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     user_doc = {

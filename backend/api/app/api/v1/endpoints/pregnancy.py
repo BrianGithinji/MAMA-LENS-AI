@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Pregnancy Profile Endpoints (MongoDB)"""
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -28,7 +27,6 @@ async def create_pregnancy_profile(
     current_user: dict = Depends(get_current_active_user),
 ):
     db = get_db()
-    # Deactivate any existing active profile
     await db.pregnancy_profiles.update_many(
         {"user_id": current_user["_id"], "is_active": True},
         {"$set": {"is_active": False}}

@@ -1,7 +1,3 @@
-"""
-MAMA-LENS AI — MongoDB Database Layer (Motor async driver)
-Handles both mongodb:// and mongodb+srv:// connection strings.
-"""
 import structlog
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from app.core.config import settings
@@ -12,28 +8,19 @@ _client: AsyncIOMotorClient | None = None
 
 
 def _normalise_uri(uri: str) -> str:
-    """
-    Convert old-style mongodb:// shard URIs to mongodb+srv:// format.
-    Render / Atlas works best with SRV — it handles TLS automatically.
-    """
     if uri.startswith("mongodb+srv://"):
-        return uri  # already correct
+        return uri
 
-    # If it's the old shard-list format, extract credentials and cluster name
-    # e.g. mongodb://user:pass@ac-xxx-shard-00-00.yyy.mongodb.net:27017,...
     if "mongodb.net:27017" in uri and "shard-00-00" in uri:
         try:
-            # Extract user:pass
             after_scheme = uri.replace("mongodb://", "")
             creds, rest = after_scheme.split("@", 1)
             # Extract cluster base from first shard host
-            first_host = rest.split(",")[0]          # ac-xxx-shard-00-00.yyy.mongodb.net:27017
-            host_no_port = first_host.split(":")[0]  # ac-xxx-shard-00-00.yyy.mongodb.net
-            # Cluster SRV host = remove the shard suffix
-            # ac-d88dmls-shard-00-00.e5o71yv.mongodb.net → ac-d88dmls.e5o71yv.mongodb.net
+            first_host = rest.split(",")[0]
+            host_no_port = first_host.split(":")[0]
             parts = host_no_port.split(".")
-            cluster_part = parts[0]  # ac-d88dmls-shard-00-00
-            base_cluster = "-".join(cluster_part.split("-")[:-3])  # ac-d88dmls
+            cluster_part = parts[0]
+            base_cluster = "-".join(cluster_part.split("-")[:-3])
             srv_host = f"{base_cluster}.{'.'.join(parts[1:])}"
             srv_uri = f"mongodb+srv://{creds}@{srv_host}/?retryWrites=true&w=majority&appName=MAMA"
             logger.info("Converted to SRV URI", srv_host=srv_host)
@@ -67,11 +54,9 @@ def get_db() -> AsyncIOMotorDatabase:
 
 
 async def init_db():
-    """Connect to MongoDB and create indexes. Safe to call on every startup."""
     db = get_database()
 
     async def safe_index(collection, key, **kwargs):
-        """Create index, ignore if it already exists with same options."""
         try:
             await collection.create_index(key, **kwargs)
         except Exception as e:
@@ -109,6 +94,10 @@ async def init_db():
 
     await safe_index(db.wearable_devices, "user_id")
     await safe_index(db.wearable_readings, "user_id")
+
+    await safe_index(db.community_posts, "topic")
+    await safe_index(db.community_posts, [("created_at", -1)])
+    await safe_index(db.community_posts, "user_id")
 
     logger.info("MongoDB indexes ready", db=settings.MONGODB_DB_NAME)
 

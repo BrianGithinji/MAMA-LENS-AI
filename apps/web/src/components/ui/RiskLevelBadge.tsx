@@ -1,7 +1,3 @@
-/**
- * MAMA-LENS AI — Risk Level Badge Component
- */
-
 import { clsx } from "clsx";
 
 interface RiskLevelBadgeProps {
@@ -11,19 +7,19 @@ interface RiskLevelBadgeProps {
 
 const RISK_CONFIG = {
   low: {
-    label: "✅ Low Risk",
+    label: "Low Risk",
     className: "bg-secondary-100 text-secondary-700 border-secondary-200",
   },
   moderate: {
-    label: "⚠️ Moderate Risk",
+    label: "Moderate Risk",
     className: "bg-warm-100 text-warm-700 border-warm-200",
   },
   high: {
-    label: "🔴 High Risk",
+    label: "High Risk",
     className: "bg-orange-100 text-orange-700 border-orange-200",
   },
   emergency: {
-    label: "🚨 Emergency",
+    label: "Emergency",
     className: "bg-emergency-100 text-emergency-700 border-emergency-200 animate-pulse",
   },
 };

@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Security Utilities"""
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -9,24 +8,18 @@ from jose import jwt
 from app.core.config import settings
 
 
-# ─── Password Hashing (direct bcrypt — no passlib) ───────────────────────────
-
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
     password_bytes = password.encode("utf-8")
     salt = bcrypt.gensalt(rounds=12)
     return bcrypt.hashpw(password_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    """Verify a plain password against its bcrypt hash."""
     try:
         return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
     except Exception:
         return False
 
-
-# ─── JWT Tokens ──────────────────────────────────────────────────────────────
 
 def create_access_token(subject: Any, extra_claims: dict = None) -> str:
     expire = datetime.now(timezone.utc) + timedelta(
@@ -64,8 +57,6 @@ def decode_token(token: str) -> dict:
         algorithms=[settings.JWT_ALGORITHM],
     )
 
-
-# ─── OTP & Tokens ────────────────────────────────────────────────────────────
 
 def generate_numeric_otp(length: int = 6) -> str:
     return "".join([str(secrets.randbelow(10)) for _ in range(length)])

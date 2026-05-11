@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — AI Avatar Endpoints (MongoDB)"""
 import io
 from typing import Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
@@ -10,7 +9,6 @@ from app.api.v1.endpoints.auth import get_current_active_user
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-# Import AI modules bundled inside the backend package
 try:
     from app.conversation_ai import ConversationalAI
     from app.emotion_detector import EmotionDetector, EmotionInput

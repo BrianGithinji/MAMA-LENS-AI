@@ -1,4 +1,3 @@
-"""MAMA-LENS AI — Appointment Endpoints (MongoDB)"""
 import uuid
 from datetime import datetime, timezone
 from typing import Optional

@@ -1,16 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
-
-// Layouts
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 
-// Auth pages
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import VerifyOTPPage from "./pages/auth/VerifyOTPPage";
 
-// Dashboard pages
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import RiskAssessmentPage from "./pages/risk/RiskAssessmentPage";
 import RiskResultPage from "./pages/risk/RiskResultPage";
@@ -28,7 +24,6 @@ import EmergencyPage from "./pages/emergency/EmergencyPage";
 import GriefSupportPage from "./pages/support/GriefSupportPage";
 import MentalHealthPage from "./pages/support/MentalHealthPage";
 
-// Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) {
@@ -40,14 +35,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
-      {/* Auth routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify" element={<VerifyOTPPage />} />
       </Route>
-
-      {/* Protected dashboard routes */}
       <Route
         element={
           <ProtectedRoute>
@@ -74,8 +66,7 @@ export default function App() {
         <Route path="/mental-health" element={<MentalHealthPage />} />
       </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
