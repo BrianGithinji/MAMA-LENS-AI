@@ -162,8 +162,12 @@ export default function LoginPage() {
 
       <div className="mt-6 p-4 bg-calm-50 rounded-2xl">
         <p className="text-calm-700 text-xs text-center">
-          🔒 Your health data is encrypted and protected. We never share your information without consent.
+          Your health data is encrypted and protected. We never share your information without consent.
         </p>
+        <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-calm-200">
+          <span className="text-gray-400 text-xs">Developed in collaboration with</span>
+          <img src="/aphrc.png" alt="APHRC" className="h-5 w-auto object-contain" />
+        </div>
       </div>
     </div>
   );
