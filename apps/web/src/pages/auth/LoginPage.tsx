@@ -81,7 +81,6 @@ export default function LoginPage() {
           useOneTap
           shape="rectangular"
           size="large"
-          width="100%"
           text="signin_with"
           logo_alignment="left"
         />
@@ -167,7 +166,7 @@ export default function LoginPage() {
         </p>
         <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-calm-200">
           <span className="text-gray-400 text-xs whitespace-nowrap">Developed in collaboration with</span>
-          <img src={aphrcLogo} alt="APHRC" className="h-8 w-auto object-contain" />
+          <img src={aphrcLogo} alt="APHRC" className="h-10 w-auto object-contain rounded" style={{ background: 'white', padding: '2px' }} />
         </div>
       </div>
     </div>
