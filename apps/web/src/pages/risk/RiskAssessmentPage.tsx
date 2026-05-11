@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,33 +10,24 @@ import { ChevronRight, ChevronLeft, Activity, Heart, Baby, Leaf } from "lucide-r
 import { riskAPI } from "../../api/client";
 
 const riskSchema = z.object({
-  // Step 1: Basic info
   age: z.number().min(10).max(60),
   gestational_age_weeks: z.number().min(1).max(42),
   weight_kg: z.number().min(30).max(200),
   height_cm: z.number().min(100).max(220),
-
-  // Step 2: Vitals
   systolic_bp: z.number().min(60).max(250),
   diastolic_bp: z.number().min(40).max(150),
   heart_rate: z.number().min(40).max(200),
   blood_glucose: z.number().min(40).max(500),
   hemoglobin: z.number().min(3).max(20),
-
-  // Step 3: History
   previous_miscarriages: z.number().min(0).max(20).default(0),
   previous_preeclampsia: z.boolean().default(false),
   previous_gestational_diabetes: z.boolean().default(false),
   previous_preterm_birth: z.boolean().default(false),
   is_multiple_pregnancy: z.boolean().default(false),
-
-  // Step 4: Lifestyle
   smoking: z.boolean().default(false),
   alcohol_use: z.boolean().default(false),
   stress_level: z.number().min(1).max(10).default(5),
   nutrition_status: z.enum(["poor", "fair", "good", "excellent"]).default("fair"),
-
-  // Step 5: Symptoms
   reported_symptoms: z.array(z.string()).default([]),
   pre_existing_conditions: z.array(z.string()).default([]),
 });
@@ -117,7 +109,6 @@ export default function RiskAssessmentPage() {
 
   return (
     <div className="min-h-screen bg-warm-50 pb-20">
-      {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center gap-3 mb-3">
@@ -130,7 +121,6 @@ export default function RiskAssessmentPage() {
               <p className="text-gray-500 text-xs">Step {currentStep} of {STEPS.length}</p>
             </div>
           </div>
-          {/* Progress bar */}
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-full"
@@ -143,7 +133,6 @@ export default function RiskAssessmentPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto px-4 pt-6">
         <AnimatePresence mode="wait">
-          {/* Step 1: Basic Info */}
           {currentStep === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <StepHeader step={STEPS[0]} />
@@ -170,7 +159,6 @@ export default function RiskAssessmentPage() {
             </motion.div>
           )}
 
-          {/* Step 2: Vitals */}
           {currentStep === 2 && (
             <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <StepHeader step={STEPS[1]} />
@@ -206,7 +194,6 @@ export default function RiskAssessmentPage() {
             </motion.div>
           )}
 
-          {/* Step 3: History */}
           {currentStep === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <StepHeader step={STEPS[2]} />
@@ -249,7 +236,6 @@ export default function RiskAssessmentPage() {
             </motion.div>
           )}
 
-          {/* Step 4: Lifestyle */}
           {currentStep === 4 && (
             <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <StepHeader step={STEPS[3]} />
@@ -285,7 +271,6 @@ export default function RiskAssessmentPage() {
             </motion.div>
           )}
 
-          {/* Step 5: Symptoms */}
           {currentStep === 5 && (
             <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <StepHeader step={STEPS[4]} />
@@ -314,7 +299,6 @@ export default function RiskAssessmentPage() {
           )}
         </AnimatePresence>
 
-        {/* Navigation */}
         <div className="flex gap-3 mt-8">
           {currentStep > 1 && (
             <button type="button" onClick={() => setCurrentStep(s => s - 1)}
