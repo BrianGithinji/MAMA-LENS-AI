@@ -1,9 +1,4 @@
-/**
- * MAMA-LENS AI — Emergency Banner Component
- */
-
 import { AlertTriangle, Phone } from "lucide-react";
-import { Link } from "react-router-dom";
 
 export default function EmergencyBanner() {
   return (
@@ -13,10 +8,7 @@ export default function EmergencyBanner() {
           <AlertTriangle className="w-5 h-5 flex-shrink-0 animate-pulse" />
           <p className="text-sm font-semibold">Emergency detected — seek care immediately</p>
         </div>
-        <a
-          href="tel:999"
-          className="flex items-center gap-1 bg-white text-emergency-600 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0"
-        >
+        <a href="tel:999" className="flex items-center gap-1 bg-white text-emergency-600 text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0">
           <Phone className="w-3 h-3" /> 999
         </a>
       </div>

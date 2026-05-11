@@ -1,6 +1,3 @@
-/**
- * MAMA-LENS AI — Appointments Page
- */
 import { Calendar, Plus } from "lucide-react";
 
 export default function AppointmentsPage() {

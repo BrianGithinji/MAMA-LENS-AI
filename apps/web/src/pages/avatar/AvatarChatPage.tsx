@@ -1,10 +1,7 @@
-/**
- * MAMA-LENS AI — AI Avatar Chat Page
- */
 import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, Send, Heart } from "lucide-react";
+import { Mic, MicOff, Send } from "lucide-react";
 import { avatarAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 import Logo from "../../components/brand/Logo";
@@ -14,7 +11,7 @@ interface Message { role: "user" | "assistant"; content: string; emotion?: strin
 export default function AvatarChatPage() {
   const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: `Hello ${user?.first_name || ""}! I'm MAMA, your maternal health companion. How are you feeling today? 💚` }
+    { role: "assistant", content: `Hello ${user?.first_name || ""}! I'm MAMA, your maternal health companion. How are you feeling today?` }
   ]);
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -40,7 +37,7 @@ export default function AvatarChatPage() {
       if (data.is_emergency) {
         setMessages(prev => [...prev, {
           role: "assistant",
-          content: "🚨 Please call emergency services (999/112) or go to the nearest hospital immediately.",
+          content: "Please call emergency services (999/112) or go to the nearest hospital immediately.",
         }]);
       }
     },
@@ -56,10 +53,8 @@ export default function AvatarChatPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-primary-50 to-warm-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 py-4">
         <div className="max-w-lg mx-auto flex items-center gap-3">
-          {/* Logo icon as avatar */}
           <div className="w-10 h-10 rounded-2xl bg-primary-50 border border-primary-100 flex items-center justify-center overflow-hidden">
             <Logo variant="icon" width={28} />
           </div>
@@ -73,7 +68,6 @@ export default function AvatarChatPage() {
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 max-w-lg mx-auto w-full">
         <AnimatePresence>
           {messages.map((msg, i) => (
@@ -109,7 +103,6 @@ export default function AvatarChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className="bg-white border-t border-gray-100 px-4 py-4 safe-area-pb">
         <div className="max-w-lg mx-auto flex items-center gap-2">
           <button onClick={() => setIsRecording(!isRecording)}

@@ -1,7 +1,3 @@
-/**
- * MAMA-LENS AI — Consultation Room
- * Redirects to MediLink Health for the actual consultation.
- */
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
@@ -10,7 +6,6 @@ export default function ConsultationRoomPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Open MediLink in a new tab and go back to telemedicine page
     window.open("https://medilinkhealth.co.ke", "_blank", "noopener,noreferrer");
     navigate("/telemedicine", { replace: true });
   }, [navigate]);

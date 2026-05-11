@@ -1,7 +1,3 @@
-/**
- * MAMA-LENS AI — Quick Action Card Component
- */
-
 import { Link } from "react-router-dom";
 import { LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
@@ -15,22 +11,9 @@ interface QuickActionCardProps {
   urgent?: boolean;
 }
 
-export default function QuickActionCard({
-  icon: Icon,
-  label,
-  description,
-  href,
-  color,
-  urgent = false,
-}: QuickActionCardProps) {
+export default function QuickActionCard({ icon: Icon, label, description, href, color, urgent = false }: QuickActionCardProps) {
   return (
-    <Link
-      to={href}
-      className={clsx(
-        "block bg-white rounded-3xl p-4 shadow-card hover:shadow-md transition-all active:scale-95",
-        urgent && "ring-2 ring-emergency-400"
-      )}
-    >
+    <Link to={href} className={clsx("block bg-white rounded-3xl p-4 shadow-card hover:shadow-md transition-all active:scale-95", urgent && "ring-2 ring-emergency-400")}>
       <div className={clsx("w-10 h-10 rounded-2xl flex items-center justify-center mb-3", color)}>
         <Icon className="w-5 h-5" />
       </div>

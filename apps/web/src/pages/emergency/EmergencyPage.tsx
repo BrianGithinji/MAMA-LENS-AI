@@ -1,7 +1,3 @@
-/**
- * MAMA-LENS AI — Emergency Page
- * Quick access to emergency resources and danger sign information
- */
 import { Phone, MapPin, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -20,7 +16,6 @@ const DANGER_SIGNS = [
 export default function EmergencyPage() {
   return (
     <div className="min-h-screen bg-emergency-50 pb-20">
-      {/* Header */}
       <div className="bg-emergency-500 px-4 pt-8 pb-12">
         <div className="max-w-lg mx-auto text-center">
           <AlertTriangle className="w-12 h-12 text-white mx-auto mb-3 animate-pulse" />
@@ -30,7 +25,6 @@ export default function EmergencyPage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 -mt-6 space-y-4">
-        {/* Emergency Call Buttons */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl shadow-card p-5">
           <h2 className="font-bold text-gray-900 mb-4">Emergency Numbers</h2>
           <div className="grid grid-cols-2 gap-3">
@@ -50,7 +44,6 @@ export default function EmergencyPage() {
           </div>
         </motion.div>
 
-        {/* Find Nearest Emergency Facility */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Link to="/facilities?emergency=true"
             className="flex items-center gap-4 bg-white rounded-3xl shadow-card p-5 active:scale-95 transition-all">
@@ -64,17 +57,14 @@ export default function EmergencyPage() {
           </Link>
         </motion.div>
 
-        {/* Danger Signs */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="bg-white rounded-3xl shadow-card p-5">
-          <h2 className="font-bold text-gray-900 mb-4">⚠️ Pregnancy Danger Signs</h2>
+          <h2 className="font-bold text-gray-900 mb-4">Pregnancy Danger Signs</h2>
           <p className="text-gray-500 text-sm mb-4">Go to hospital IMMEDIATELY if you have any of these:</p>
           <div className="space-y-2">
             {DANGER_SIGNS.map(({ sign, sw, urgent }) => (
               <div key={sign} className={`flex items-start gap-3 p-3 rounded-2xl ${urgent ? "bg-emergency-50" : "bg-warm-50"}`}>
-                <span className={`text-sm flex-shrink-0 ${urgent ? "text-emergency-500" : "text-warm-500"}`}>
-                  {urgent ? "🚨" : "⚠️"}
-                </span>
+                <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${urgent ? "text-emergency-500" : "text-warm-500"}`} />
                 <div>
                   <p className="text-gray-800 text-sm font-medium">{sign}</p>
                   <p className="text-gray-500 text-xs">{sw}</p>
@@ -84,7 +74,6 @@ export default function EmergencyPage() {
           </div>
         </motion.div>
 
-        {/* Birth Preparedness */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="bg-secondary-50 border border-secondary-200 rounded-3xl p-5">
           <h3 className="font-bold text-secondary-800 mb-2">Birth Preparedness Checklist</h3>

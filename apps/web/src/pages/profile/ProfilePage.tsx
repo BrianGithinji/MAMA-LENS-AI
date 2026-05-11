@@ -1,6 +1,3 @@
-/**
- * MAMA-LENS AI — Profile Page
- */
 import { useAuthStore } from "../../store/authStore";
 import { useNavigate } from "react-router-dom";
 import { User, Globe, Bell, Shield, LogOut, ChevronRight } from "lucide-react";
@@ -19,10 +16,10 @@ export default function ProfilePage() {
   };
 
   const menuItems = [
-    { icon: User, label: "Personal Information", href: "/profile/edit" },
-    { icon: Globe, label: "Language & Accessibility", href: "/profile/language" },
-    { icon: Bell, label: "Notification Preferences", href: "/profile/notifications" },
-    { icon: Shield, label: "Privacy & Data", href: "/profile/privacy" },
+    { icon: User, label: "Personal Information" },
+    { icon: Globe, label: "Language & Accessibility" },
+    { icon: Bell, label: "Notification Preferences" },
+    { icon: Shield, label: "Privacy & Data" },
   ];
 
   return (

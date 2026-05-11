@@ -1,6 +1,3 @@
-/**
- * MAMA-LENS AI — OTP Verification Page
- */
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
@@ -21,7 +18,7 @@ export default function VerifyOTPPage() {
       const tokens = response.data;
       const profileResponse = await userAPI.getProfile();
       login(tokens, profileResponse.data);
-      toast.success("Account verified! Welcome to MAMA-LENS 💚");
+      toast.success("Account verified! Welcome to MAMA-LENS");
       navigate("/dashboard");
     },
     onError: () => toast.error("Invalid OTP. Please try again."),

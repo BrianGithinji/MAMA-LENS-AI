@@ -1,8 +1,3 @@
-/**
- * MAMA-LENS AI — Main Dashboard
- * Personalized maternal health overview
- */
-
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -105,17 +100,14 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-warm-50 pb-20">
-      {/* Emergency Banner */}
       {latestRisk?.is_emergency && <EmergencyBanner />}
 
-      {/* Header */}
       <div className="bg-gradient-to-br from-primary-500 via-primary-600 to-earth-600 px-6 pt-8 pb-6">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-2xl mx-auto"
         >
-          {/* Logo in header — white pill so PNG background blends cleanly */}
           <div className="flex items-center justify-between mb-4">
             <div className="bg-white/95 rounded-2xl px-3 py-1.5 inline-block">
               <Logo variant="compact" width={100} />
@@ -131,13 +123,12 @@ export default function DashboardPage() {
 
           <p className="text-primary-100 text-sm font-medium">{greeting()},</p>
           <h1 className="text-white text-2xl font-bold mt-0.5">
-            {user?.first_name} 💚
+            {user?.first_name}
           </h1>
           <p className="text-primary-100 text-sm mt-1">
             Here to support you every step of the way
           </p>
 
-          {/* Unread notifications badge */}
           {notifications && notifications.length > 0 && (
             <Link
               to="/notifications"
@@ -151,7 +142,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 pt-4">
-        {/* Pregnancy Week Card */}
         {pregnancy && pregnancy.gestational_age_weeks && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -166,7 +156,6 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {/* Risk Status Card */}
         {latestRisk && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -199,7 +188,6 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {/* Quick Actions Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -221,7 +209,6 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Emergency Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -237,7 +224,6 @@ export default function DashboardPage() {
           </Link>
         </motion.div>
 
-        {/* Footer note */}
         <p className="text-center text-gray-400 text-xs mt-6 pb-4">
           MAMA-LENS AI provides guidance, not medical diagnosis.
           Always consult a healthcare professional.

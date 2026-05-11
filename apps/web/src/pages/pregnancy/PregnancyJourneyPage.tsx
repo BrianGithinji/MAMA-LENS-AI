@@ -1,8 +1,5 @@
-/**
- * MAMA-LENS AI — Pregnancy Journey Page
- */
 import { useQuery } from "@tanstack/react-query";
-import { Baby, Calendar, Heart } from "lucide-react";
+import { Baby, Heart } from "lucide-react";
 import { pregnancyAPI, educationAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 

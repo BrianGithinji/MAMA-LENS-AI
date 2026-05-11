@@ -1,6 +1,3 @@
-/**
- * MAMA-LENS AI — Health Records Page
- */
 import { useQuery } from "@tanstack/react-query";
 import { Activity, Plus } from "lucide-react";
 import { healthRecordsAPI } from "../../api/client";

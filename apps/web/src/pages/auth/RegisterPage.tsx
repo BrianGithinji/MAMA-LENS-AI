@@ -11,7 +11,6 @@ export default function RegisterPage() {
   const { login } = useAuthStore();
   const { register, handleSubmit } = useForm();
 
-  // ── Helper ─────────────────────────────────────────────────────────────────
   const handleAuthSuccess = (data: any) => {
     login(
       { access_token: data.access_token, refresh_token: data.refresh_token },
@@ -26,7 +25,6 @@ export default function RegisterPage() {
     );
   };
 
-  // ── Phone registration ─────────────────────────────────────────────────────
   const registerMutation = useMutation({
     mutationFn: (data: object) => authAPI.register(data),
     onSuccess: (response) => {
@@ -39,7 +37,6 @@ export default function RegisterPage() {
     },
   });
 
-  // ── Google sign-up ─────────────────────────────────────────────────────────
   const googleMutation = useMutation({
     mutationFn: (credential: string) => authAPI.googleLogin(credential),
     onSuccess: (response) => {
@@ -55,7 +52,6 @@ export default function RegisterPage() {
       <h2 className="text-2xl font-bold text-gray-900">Create account</h2>
       <p className="text-gray-500 text-sm mt-1">Join MAMA-LENS AI for compassionate maternal care</p>
 
-      {/* ── Google Sign-Up ── */}
       <div className="mt-6 flex flex-col items-center gap-3">
         <GoogleLogin
           onSuccess={(credentialResponse) => {
@@ -66,7 +62,6 @@ export default function RegisterPage() {
           onError={() => toast.error("Google sign-up failed.")}
           shape="rectangular"
           size="large"
-          width="100%"
           text="signup_with"
           logo_alignment="left"
         />
@@ -75,14 +70,12 @@ export default function RegisterPage() {
         )}
       </div>
 
-      {/* ── Divider ── */}
       <div className="flex items-center gap-3 my-5">
         <div className="flex-1 h-px bg-gray-200" />
         <span className="text-gray-400 text-xs font-medium">or sign up with phone</span>
         <div className="flex-1 h-px bg-gray-200" />
       </div>
 
-      {/* ── Phone form ── */}
       <form
         onSubmit={handleSubmit((data) =>
           registerMutation.mutate({ ...data, data_consent_given: true })

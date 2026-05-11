@@ -1,6 +1,3 @@
-/**
- * MAMA-LENS AI — Education & Pregnancy Guidance Page
- */
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Baby, Apple, AlertTriangle, Calendar } from "lucide-react";
 import { educationAPI } from "../../api/client";
@@ -16,10 +13,10 @@ export default function EducationPage() {
   });
 
   const topics = [
-    { icon: Baby, title: "Week by Week", desc: "Your baby's development", color: "bg-primary-100 text-primary-600", href: "#weekly" },
-    { icon: Apple, title: "Nutrition Guide", desc: "What to eat during pregnancy", color: "bg-secondary-100 text-secondary-600", href: "#nutrition" },
-    { icon: AlertTriangle, title: "Danger Signs", desc: "Know when to seek help", color: "bg-emergency-100 text-emergency-600", href: "#danger" },
-    { icon: Calendar, title: "ANC Schedule", desc: "Your antenatal care visits", color: "bg-calm-100 text-calm-600", href: "#anc" },
+    { icon: Baby, title: "Week by Week", desc: "Your baby's development", color: "bg-primary-100 text-primary-600" },
+    { icon: Apple, title: "Nutrition Guide", desc: "What to eat during pregnancy", color: "bg-secondary-100 text-secondary-600" },
+    { icon: AlertTriangle, title: "Danger Signs", desc: "Know when to seek help", color: "bg-emergency-100 text-emergency-600" },
+    { icon: Calendar, title: "ANC Schedule", desc: "Your antenatal care visits", color: "bg-calm-100 text-calm-600" },
   ];
 
   return (
@@ -44,7 +41,7 @@ export default function EducationPage() {
         </div>
 
         {dangerSigns && (
-          <div id="danger" className="bg-white rounded-3xl shadow-card p-5">
+          <div className="bg-white rounded-3xl shadow-card p-5">
             <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-emergency-500" />
               {dangerSigns.title}
@@ -53,7 +50,7 @@ export default function EducationPage() {
             <div className="space-y-2">
               {dangerSigns.signs?.map((sign: string, i: number) => (
                 <div key={i} className="flex items-center gap-2 p-2 bg-emergency-50 rounded-xl">
-                  <span className="text-emergency-500 text-sm">🚨</span>
+                  <AlertTriangle className="w-4 h-4 text-emergency-500 flex-shrink-0" />
                   <p className="text-gray-700 text-sm">{sign}</p>
                 </div>
               ))}

@@ -1,7 +1,3 @@
-/**
- * MAMA-LENS AI — Pregnancy Week Card
- */
-
 import { Baby } from "lucide-react";
 
 interface PregnancyWeekCardProps {
@@ -40,7 +36,7 @@ export default function PregnancyWeekCard({ week, dueDate, status }: PregnancyWe
       <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-3xl p-5 shadow-card border border-rose-100">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-rose-100 flex items-center justify-center">
-            <Heart className="w-5 h-5 text-rose-500" />
+            <HeartIcon className="w-5 h-5 text-rose-500" />
           </div>
           <div>
             <p className="font-semibold text-rose-800">Grief Support Available</p>
@@ -58,7 +54,7 @@ export default function PregnancyWeekCard({ week, dueDate, status }: PregnancyWe
           <p className="text-primary-600 text-xs font-medium uppercase tracking-wide">{trimester}</p>
           <h2 className="text-gray-900 font-bold text-2xl mt-0.5">Week {week}</h2>
           <p className="text-gray-600 text-sm mt-1">
-            Your baby is the size of a <span className="font-medium text-primary-600">{babySize}</span> 🌱
+            Your baby is the size of a <span className="font-medium text-primary-600">{babySize}</span>
           </p>
           {dueDate && (
             <p className="text-gray-500 text-xs mt-1">
@@ -71,7 +67,6 @@ export default function PregnancyWeekCard({ week, dueDate, status }: PregnancyWe
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="mt-4">
         <div className="flex justify-between text-xs text-gray-400 mb-1">
           <span>Week 1</span>
@@ -89,7 +84,7 @@ export default function PregnancyWeekCard({ week, dueDate, status }: PregnancyWe
   );
 }
 
-function Heart({ className }: { className?: string }) {
+function HeartIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
       <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>

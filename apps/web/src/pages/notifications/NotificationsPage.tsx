@@ -1,6 +1,3 @@
-/**
- * MAMA-LENS AI — Notifications Page
- */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { notificationsAPI } from "../../api/client";
