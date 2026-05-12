@@ -5,8 +5,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from app.core.database import get_db
 from app.api.v1.endpoints.auth import get_current_active_user
+from app.conversation_ai import ConversationalAI
+from app.core.config import settings
 
 router = APIRouter()
+_ai = ConversationalAI(mistral_api_key=settings.MISTRAL_API_KEY)
+
+
+class ChatRequest(BaseModel):
+    content: str
+    language: str = "en"
+    channel: str = "app"
+    literacy_level: str = "medium"
+    gestational_age_weeks: Optional[int] = None
 
 
 @router.get("/")
@@ -18,22 +29,59 @@ async def get_messages(limit: int = 50, current_user: dict = Depends(get_current
 
 
 @router.post("/chat")
-async def send_chat_message(message: dict, current_user: dict = Depends(get_current_active_user)):
+async def send_chat_message(message: ChatRequest, current_user: dict = Depends(get_current_active_user)):
     db = get_db()
     now = datetime.now(timezone.utc).isoformat()
-    msg_id = str(uuid.uuid4())
-    doc = {
-        "_id": msg_id,
-        "user_id": current_user["_id"],
-        "channel": message.get("channel", "app"),
+    user_id = current_user["_id"]
+
+    # Persist user message
+    await db.messages.insert_one({
+        "_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "channel": message.channel,
         "message_type": "text",
         "direction": "inbound",
-        "content": message.get("content", ""),
-        "language": message.get("language", "en"),
+        "content": message.content,
+        "language": message.language,
         "created_at": now,
+    })
+
+    # Call MAMA AI
+    ai_response = _ai.chat(
+        session_id=user_id,
+        user_message=message.content,
+        language=message.language,
+        channel=message.channel,
+        literacy_level=message.literacy_level,
+        gestational_age_weeks=message.gestational_age_weeks,
+    )
+
+    # Persist MAMA's reply
+    reply_id = str(uuid.uuid4())
+    await db.messages.insert_one({
+        "_id": reply_id,
+        "user_id": user_id,
+        "channel": message.channel,
+        "message_type": "text",
+        "direction": "outbound",
+        "content": ai_response.message,
+        "language": ai_response.language,
+        "intent": ai_response.intent.value,
+        "is_emergency": ai_response.is_emergency,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    return {
+        "id": reply_id,
+        "message": ai_response.message,
+        "intent": ai_response.intent.value,
+        "is_emergency": ai_response.is_emergency,
+        "emergency_type": ai_response.emergency_type,
+        "suggested_actions": ai_response.suggested_actions,
+        "follow_up_questions": ai_response.follow_up_questions,
+        "requires_human_handoff": ai_response.requires_human_handoff,
+        "education_content": ai_response.education_content,
     }
-    await db.messages.insert_one(doc)
-    return {"id": msg_id, "status": "sent"}
 
 
 # ─── Community (Mental Health) ────────────────────────────────────────────────

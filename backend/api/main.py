@@ -53,8 +53,6 @@ app = FastAPI(
 
 origins = [
     "https://mama-lens.netlify.app",
-    "https://mama-lens-ai.netlify.app",
-    "https://mamalens.netlify.app",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
@@ -68,6 +66,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_coop_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+    return response
 
 
 @app.exception_handler(Exception)

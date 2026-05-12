@@ -382,12 +382,12 @@ class ConversationalAI:
     """
     Multilingual conversational AI for maternal health support.
 
-    Integrates GPT-4o for natural language responses with rule-based
+    Integrates Mistral AI for natural language responses with rule-based
     intent classification, emergency detection, and education delivery.
     """
 
-    def __init__(self, openai_api_key: Optional[str] = None) -> None:
-        self.api_key = openai_api_key or os.getenv("OPENAI_API_KEY", "")
+    def __init__(self, mistral_api_key: Optional[str] = None) -> None:
+        self.api_key = mistral_api_key or os.getenv("MISTRAL_API_KEY", "")
         self._intent_patterns = self._compile_intent_patterns()
         self._emergency_patterns = self._compile_emergency_patterns()
         self._sessions: Dict[str, ConversationContext] = {}
@@ -452,7 +452,7 @@ class ConversationalAI:
             response_text, confidence = self._generate_response(
                 ctx, user_message, intent, language, literacy_level, channel
             )
-            requires_handoff = intent == Intent.EMOTIONAL_SUPPORT and confidence < 0.5
+            requires_handoff = intent == Intent.EMOTIONAL_SUPPORT and confidence < 0.6
 
         # 5. Simplify for low literacy / SMS
         if literacy_level == "low" or channel in ("sms", "ussd"):
@@ -611,16 +611,16 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Generate response using GPT-4o or fallback to rule-based."""
+        """Generate response using Mistral AI or fallback to rule-based."""
         if self.api_key:
             try:
-                return self._gpt4o_response(ctx, user_message, intent, language, literacy_level, channel)
+                return self._mistral_response(ctx, user_message, intent, language, literacy_level, channel)
             except Exception as exc:
-                logger.warning("GPT-4o call failed: %s. Using fallback.", exc)
+                logger.warning("Mistral AI call failed: %s. Using fallback.", exc)
 
         return self._rule_based_response(intent, language, literacy_level), 0.70
 
-    def _gpt4o_response(
+    def _mistral_response(
         self,
         ctx: ConversationContext,
         user_message: str,
@@ -629,14 +629,14 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Call OpenAI GPT-4o API for response generation."""
+        """Call Mistral AI API for response generation."""
         try:
-            import openai  # type: ignore
-            client = openai.OpenAI(api_key=self.api_key)
+            from mistralai import Mistral  # type: ignore
+
+            client = Mistral(api_key=self.api_key)
 
             system_prompt = SYSTEM_PROMPTS.get(language, SYSTEM_PROMPTS["en"])
 
-            # Add context to system prompt
             context_additions = []
             if ctx.gestational_age_weeks:
                 context_additions.append(
@@ -661,21 +661,21 @@ class ConversationalAI:
             messages = [{"role": "system", "content": system_prompt}]
             messages.extend(ctx.get_recent_messages(8))
 
-            response = client.chat.completions.create(
-                model="gpt-4o",
+            response = client.chat.complete(
+                model=os.getenv("MISTRAL_MODEL", "mistral-large-latest"),
                 messages=messages,
                 max_tokens=500 if channel not in ("sms", "ussd") else 100,
                 temperature=0.7,
             )
 
             text = response.choices[0].message.content or ""
-            return text.strip(), 0.90
+            return text.strip(), 0.92
 
         except ImportError:
-            logger.warning("openai package not installed.")
+            logger.warning("mistralai package not installed.")
             raise
         except Exception as exc:
-            logger.error("OpenAI API error: %s", exc)
+            logger.error("Mistral AI error: %s", exc)
             raise
 
     def _rule_based_response(
@@ -908,7 +908,7 @@ class ConversationalAI:
 
 def create_conversation_ai(api_key: Optional[str] = None) -> ConversationalAI:
     """Create a ConversationalAI instance."""
-    return ConversationalAI(openai_api_key=api_key)
+    return ConversationalAI(mistral_api_key=api_key)
 
 
 # ---------------------------------------------------------------------------
@@ -917,7 +917,7 @@ def create_conversation_ai(api_key: Optional[str] = None) -> ConversationalAI:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    ai = ConversationalAI()
+    ai = ConversationalAI(mistral_api_key=os.getenv("MISTRAL_API_KEY"))
 
     test_messages = [
         ("Hello, I am 28 weeks pregnant", "en", "app"),

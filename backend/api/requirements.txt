@@ -22,6 +22,7 @@ pydantic-settings==2.2.1
 email-validator==2.1.1
 
 # ─── AI / ML ─────────────────────────────────────────────────────────────────
+mistralai==1.2.5
 numpy==1.26.4
 scikit-learn==1.5.0
 

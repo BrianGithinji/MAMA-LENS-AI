@@ -12,8 +12,10 @@ router = APIRouter()
 try:
     from app.conversation_ai import ConversationalAI
     from app.emotion_detector import EmotionDetector, EmotionInput
+    _ai = ConversationalAI(mistral_api_key=settings.MISTRAL_API_KEY)
     _AI_AVAILABLE = True
 except ImportError:
+    _ai = None
     _AI_AVAILABLE = False
 
 
@@ -55,8 +57,7 @@ async def avatar_chat(
         text_response = "I'm here to support you. How are you feeling today?"
     else:
         try:
-            ai = ConversationalAI(openai_api_key=settings.OPENAI_API_KEY)
-            response = ai.chat(
+            response = _ai.chat(
                 session_id=request.session_id or current_user["_id"],
                 user_message=request.message,
                 language=request.language,
@@ -68,8 +69,8 @@ async def avatar_chat(
             is_emergency = response.is_emergency
             suggested_actions = response.suggested_actions
         except Exception as e:
-            logger.warning("AI chat fallback", error=str(e))
-            text_response = "I'm here to support you. How are you feeling today?"
+            logger.error("AI chat error", error=str(e))
+            raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
 
         try:
             detector = EmotionDetector()
