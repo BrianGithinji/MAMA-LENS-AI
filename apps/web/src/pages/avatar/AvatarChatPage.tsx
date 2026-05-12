@@ -7,13 +7,16 @@ import { useAuthStore } from "../../store/authStore";
 import { LANGUAGES } from "../../i18n";
 import Logo from "../../components/brand/Logo";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 
 interface Message { role: "user" | "assistant"; content: string; emotion?: string; }
 
 export default function AvatarChatPage() {
   const { user, language } = useAuthStore();
-  const { t } = useTranslation();
-  const activeLang = LANGUAGES.find(l => l.code === language);
+  const { t, i18n } = useTranslation();
+  // Always use the live i18n language — stays in sync with the switcher
+  const activeLangCode = i18n.language || language || "en";
+  const activeLang = LANGUAGES.find(l => l.code === activeLangCode);
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: t("chat_greeting").replace("{name}", user?.first_name || "") }
   ]);
@@ -27,7 +30,7 @@ export default function AvatarChatPage() {
   const chatMutation = useMutation({
     mutationFn: (message: string) => avatarAPI.chat({
       message,
-      language: language || user?.preferred_language || "en",
+      language: i18n.language || language || "en",
       session_id: sessionId.current,
       voice_response: false,
     }),
@@ -44,6 +47,9 @@ export default function AvatarChatPage() {
           content: "Please call emergency services (999/112) or go to the nearest hospital immediately.",
         }]);
       }
+    },
+    onError: () => {
+      toast.error("MAMA couldn't respond. Please try again.");
     },
   });
 

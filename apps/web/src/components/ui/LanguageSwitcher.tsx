@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { LANGUAGES } from "../../i18n";
+import { useAuthStore } from "../../store/authStore";
 
 export default function LanguageSwitcher() {
   const { i18n } = useTranslation();
@@ -17,9 +18,12 @@ export default function LanguageSwitcher() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const { setLanguage } = useAuthStore();
+
   const select = (code: string) => {
     i18n.changeLanguage(code);
     localStorage.setItem("mama_lang", code);
+    setLanguage(code);
     setOpen(false);
   };
 
