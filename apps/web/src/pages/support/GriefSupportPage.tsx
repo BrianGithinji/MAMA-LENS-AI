@@ -2,8 +2,10 @@ import { motion } from "framer-motion";
 import { Heart, MessageCircle, Phone, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import Logo from "../../components/brand/Logo";
+import { useTranslation } from "react-i18next";
 
 export default function GriefSupportPage() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-rose-50 pb-20">
       <div className="bg-gradient-to-br from-rose-400 to-pink-500 px-6 pt-10 pb-16 text-center">
@@ -11,10 +13,8 @@ export default function GriefSupportPage() {
           <div className="bg-white/90 rounded-3xl px-6 py-4 inline-block mb-4">
             <Logo variant="full" width={130} />
           </div>
-          <h1 className="text-white text-2xl font-bold">You Are Not Alone</h1>
-          <p className="text-rose-100 text-sm mt-2 max-w-xs mx-auto">
-            We are deeply sorry for your loss. Your grief is valid, and support is here for you.
-          </p>
+          <h1 className="text-white text-2xl font-bold">{t("grief_title")}</h1>
+          <p className="text-rose-100 text-sm mt-2 max-w-xs mx-auto">{t("grief_subtitle")}</p>
         </motion.div>
       </div>
 

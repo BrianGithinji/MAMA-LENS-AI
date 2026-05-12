@@ -5,10 +5,13 @@ import toast from "react-hot-toast";
 import { GoogleLogin } from "@react-oauth/google";
 import { authAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
+import { useTranslation } from "react-i18next";
+import { LANGUAGES } from "../../i18n";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const { t } = useTranslation();
   const { register, handleSubmit } = useForm();
 
   const handleAuthSuccess = (data: any) => {
@@ -19,7 +22,7 @@ export default function RegisterPage() {
         first_name: data.first_name || "",
         last_name: data.last_name || "",
         role: data.role,
-        preferred_language: "en",
+        preferred_language: data.preferred_language || "en",
         onboarding_completed: false,
       }
     );
@@ -33,7 +36,7 @@ export default function RegisterPage() {
       navigate("/dashboard");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || "Registration failed");
+      toast.error(error.response?.data?.detail || t("error"));
     },
   });
 
@@ -44,30 +47,21 @@ export default function RegisterPage() {
       toast.success("Welcome to MAMA-LENS AI! 💚");
       navigate("/dashboard");
     },
-    onError: () => toast.error("Google sign-up failed. Please try again."),
+    onError: () => toast.error(t("error")),
   });
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Create account</h2>
-      <p className="text-gray-500 text-sm mt-1">Join MAMA-LENS AI for compassionate maternal care</p>
+      <h2 className="text-2xl font-bold text-gray-900">{t("create_account")}</h2>
+      <p className="text-gray-500 text-sm mt-1">{t("tagline")}</p>
 
       <div className="mt-6 flex flex-col items-center gap-3">
         <GoogleLogin
-          onSuccess={(credentialResponse) => {
-            if (credentialResponse.credential) {
-              googleMutation.mutate(credentialResponse.credential);
-            }
-          }}
-          onError={() => toast.error("Google sign-up failed.")}
-          shape="rectangular"
-          size="large"
-          text="signup_with"
-          logo_alignment="left"
+          onSuccess={(cr) => cr.credential && googleMutation.mutate(cr.credential)}
+          onError={() => toast.error(t("error"))}
+          shape="rectangular" size="large" text="signup_with" logo_alignment="left"
         />
-        {googleMutation.isPending && (
-          <p className="text-gray-400 text-xs">Creating account with Google...</p>
-        )}
+        {googleMutation.isPending && <p className="text-gray-400 text-xs">{t("creating_account")}</p>}
       </div>
 
       <div className="flex items-center gap-3 my-5">
@@ -76,87 +70,57 @@ export default function RegisterPage() {
         <div className="flex-1 h-px bg-gray-200" />
       </div>
 
-      <form
-        onSubmit={handleSubmit((data) =>
-          registerMutation.mutate({ ...data, data_consent_given: true })
-        )}
-        className="space-y-4"
-      >
+      <form onSubmit={handleSubmit((data) => registerMutation.mutate({ ...data, data_consent_given: true }))} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1.5">First name</label>
-            <input
-              {...register("first_name", { required: true })}
-              placeholder="Jane"
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-            />
+            <label className="block text-gray-700 text-sm font-medium mb-1.5">{t("first_name")}</label>
+            <input {...register("first_name", { required: true })} placeholder="Jane"
+              className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
           </div>
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1.5">Last name</label>
-            <input
-              {...register("last_name", { required: true })}
-              placeholder="Doe"
-              className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-            />
+            <label className="block text-gray-700 text-sm font-medium mb-1.5">{t("last_name")}</label>
+            <input {...register("last_name", { required: true })} placeholder="Doe"
+              className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
           </div>
         </div>
 
         <div>
-          <label className="block text-gray-700 text-sm font-medium mb-1.5">Phone number</label>
-          <input
-            {...register("phone_number", { required: true })}
-            placeholder="+254 700 000 000"
-            className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-          />
+          <label className="block text-gray-700 text-sm font-medium mb-1.5">{t("phone_number")}</label>
+          <input {...register("phone_number", { required: true })} placeholder="+254 700 000 000"
+            className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
         </div>
 
         <div>
-          <label className="block text-gray-700 text-sm font-medium mb-1.5">Password</label>
-          <input
-            {...register("password", { required: true, minLength: 8 })}
-            type="password"
-            placeholder="Min. 8 characters"
-            className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-          />
+          <label className="block text-gray-700 text-sm font-medium mb-1.5">{t("password")}</label>
+          <input {...register("password", { required: true, minLength: 8 })} type="password" placeholder="Min. 8 characters"
+            className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300" />
         </div>
 
         <div>
-          <label className="block text-gray-700 text-sm font-medium mb-1.5">Preferred language</label>
-          <select
-            {...register("preferred_language")}
-            className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-          >
-            <option value="en">🇬🇧 English</option>
-            <option value="sw">🇰🇪 Kiswahili (Swahili)</option>
-            <option value="luo">🇰🇪 Dholuo (Luo)</option>
-            <option value="kik">🇰🇪 Gĩkũyũ (Kikuyu)</option>
-            <option value="maa">🇰🇪 Maa (Maasai)</option>
-            <option value="fr">🇫🇷 Français (French)</option>
-            <option value="ar">🇸🇦 العربية (Arabic)</option>
+          <label className="block text-gray-700 text-sm font-medium mb-1.5">{t("preferred_language")}</label>
+          <select {...register("preferred_language")}
+            className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300">
+            {LANGUAGES.map(({ code, flag, nativeLabel, label }) => (
+              <option key={code} value={code}>{flag} {nativeLabel} ({label})</option>
+            ))}
           </select>
         </div>
 
         <div className="bg-warm-50 rounded-2xl p-4">
           <p className="text-gray-600 text-xs">
-            By creating an account, you agree to our Terms of Service and Privacy Policy.
-            Your health data is encrypted and protected.
+            By creating an account, you agree to our Terms of Service and Privacy Policy. Your health data is encrypted and protected.
           </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={registerMutation.isPending}
-          className="w-full py-4 bg-primary-500 text-white font-bold rounded-2xl shadow-glow-primary disabled:opacity-60"
-        >
-          {registerMutation.isPending ? "Creating account..." : "Create Account"}
+        <button type="submit" disabled={registerMutation.isPending}
+          className="w-full py-4 bg-primary-500 text-white font-bold rounded-2xl shadow-glow-primary disabled:opacity-60">
+          {registerMutation.isPending ? t("creating_account") : t("create_account")}
         </button>
       </form>
 
       <p className="text-center text-gray-500 text-sm mt-6">
-        Already have an account?{" "}
-        <Link to="/login" className="text-primary-500 font-semibold">
-          Sign in
-        </Link>
+        {t("already_account")}{" "}
+        <Link to="/login" className="text-primary-500 font-semibold">{t("sign_in")}</Link>
       </p>
     </div>
   );

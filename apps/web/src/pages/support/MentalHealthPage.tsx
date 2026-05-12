@@ -1,11 +1,9 @@
-/**
- * MAMA-LENS AI — Mental Health Support Page with Community
- */
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Smile, MessageCircle, Phone, BookOpen, Users, Send, ChevronDown, ChevronUp, Trash2, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { communityAPI } from "../../api/client";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -168,6 +166,7 @@ function PostCard({ post, onDelete, onReply }: {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MentalHealthPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"support" | "community">("support");
   const [activeTopic, setActiveTopic] = useState("all");
   const [posts, setPosts] = useState<Post[]>([]);
@@ -229,24 +228,20 @@ export default function MentalHealthPage() {
       {/* Header */}
       <div className="bg-gradient-to-br from-purple-500 to-pink-500 px-6 pt-10 pb-16 text-center">
         <Smile className="w-12 h-12 text-white mx-auto mb-3" />
-        <h1 className="text-white text-2xl font-bold">Mental Health Support</h1>
-        <p className="text-purple-100 text-sm mt-1">Your emotional wellbeing matters as much as your physical health</p>
+        <h1 className="text-white text-2xl font-bold">{t("mental_health_title")}</h1>
+        <p className="text-purple-100 text-sm mt-1">{t("mental_health_subtitle")}</p>
       </div>
 
       <div className="max-w-lg mx-auto px-4 -mt-8 space-y-4">
         {/* Tab switcher */}
         <div className="bg-white rounded-2xl shadow-sm p-1 flex gap-1">
-          <button
-            onClick={() => setActiveTab("support")}
-            className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === "support" ? "bg-purple-500 text-white" : "text-gray-500"}`}
-          >
-            Support
+          <button onClick={() => setActiveTab("support")}
+            className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === "support" ? "bg-purple-500 text-white" : "text-gray-500"}`}>
+            {t("support")}
           </button>
-          <button
-            onClick={() => setActiveTab("community")}
-            className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${activeTab === "community" ? "bg-purple-500 text-white" : "text-gray-500"}`}
-          >
-            <Users className="w-4 h-4" /> Community
+          <button onClick={() => setActiveTab("community")}
+            className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${activeTab === "community" ? "bg-purple-500 text-white" : "text-gray-500"}`}>
+            <Users className="w-4 h-4" /> {t("community")}
           </button>
         </div>
 

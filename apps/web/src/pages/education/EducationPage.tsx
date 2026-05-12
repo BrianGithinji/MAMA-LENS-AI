@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Baby, Apple, AlertTriangle, Calendar } from "lucide-react";
 import { educationAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
+import { useTranslation } from "react-i18next";
 
 export default function EducationPage() {
-  const { user } = useAuthStore();
-  const lang = user?.preferred_language || "en";
+  const { user, language } = useAuthStore();
+  const { t } = useTranslation();
+  const lang = language || user?.preferred_language || "en";
 
   const { data: dangerSigns } = useQuery({
     queryKey: ["danger-signs", lang],
@@ -13,18 +15,18 @@ export default function EducationPage() {
   });
 
   const topics = [
-    { icon: Baby, title: "Week by Week", desc: "Your baby's development", color: "bg-primary-100 text-primary-600" },
-    { icon: Apple, title: "Nutrition Guide", desc: "What to eat during pregnancy", color: "bg-secondary-100 text-secondary-600" },
-    { icon: AlertTriangle, title: "Danger Signs", desc: "Know when to seek help", color: "bg-emergency-100 text-emergency-600" },
-    { icon: Calendar, title: "ANC Schedule", desc: "Your antenatal care visits", color: "bg-calm-100 text-calm-600" },
+    { icon: Baby,          title: t("week_by_week"),      desc: t("education_subtitle"),  color: "bg-primary-100 text-primary-600" },
+    { icon: Apple,         title: t("nutrition_guide"),   desc: t("education_subtitle"),  color: "bg-secondary-100 text-secondary-600" },
+    { icon: AlertTriangle, title: t("danger_signs_title"),desc: t("seek_care_now"),       color: "bg-emergency-100 text-emergency-600" },
+    { icon: Calendar,      title: t("anc_schedule"),      desc: t("next_anc"),            color: "bg-calm-100 text-calm-600" },
   ];
 
   return (
     <div className="min-h-screen bg-warm-50 pb-20">
       <div className="bg-gradient-to-br from-secondary-500 to-secondary-700 px-6 pt-10 pb-16">
         <BookOpen className="w-10 h-10 text-white mb-3" />
-        <h1 className="text-white text-2xl font-bold">Pregnancy Education</h1>
-        <p className="text-secondary-100 text-sm mt-1">Knowledge that protects you and your baby</p>
+        <h1 className="text-white text-2xl font-bold">{t("education_title")}</h1>
+        <p className="text-secondary-100 text-sm mt-1">{t("education_subtitle")}</p>
       </div>
 
       <div className="max-w-lg mx-auto px-4 -mt-8 space-y-4">

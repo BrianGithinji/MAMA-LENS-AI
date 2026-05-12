@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { ChevronRight, ChevronLeft, Activity, Heart, Baby, Leaf } from "lucide-react";
 import { riskAPI } from "../../api/client";
+import { useTranslation } from "react-i18next";
 
 const riskSchema = z.object({
   age: z.number().min(10).max(60),
@@ -35,11 +36,11 @@ const riskSchema = z.object({
 type RiskFormData = z.infer<typeof riskSchema>;
 
 const STEPS = [
-  { id: 1, title: "Basic Information", icon: Baby, description: "Your age and pregnancy details" },
-  { id: 2, title: "Vital Signs", icon: Activity, description: "Blood pressure, glucose, and more" },
-  { id: 3, title: "Medical History", icon: Heart, description: "Previous pregnancies and conditions" },
-  { id: 4, title: "Lifestyle", icon: Leaf, description: "Diet, stress, and habits" },
-  { id: 5, title: "Symptoms", icon: Activity, description: "Current symptoms you're experiencing" },
+  { id: 1, title: "basic_info",      icon: Baby,     description: "basic_info_desc" },
+  { id: 2, title: "vital_signs",     icon: Activity, description: "vital_signs_desc" },
+  { id: 3, title: "medical_history", icon: Heart,    description: "medical_history_desc" },
+  { id: 4, title: "lifestyle",       icon: Leaf,     description: "lifestyle_desc" },
+  { id: 5, title: "symptoms",        icon: Activity, description: "symptoms_desc" },
 ];
 
 const COMMON_SYMPTOMS = [
@@ -56,6 +57,7 @@ const COMMON_CONDITIONS = [
 
 export default function RiskAssessmentPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
@@ -117,8 +119,8 @@ export default function RiskAssessmentPage() {
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div className="flex-1">
-              <h1 className="font-bold text-gray-900 text-base">Risk Assessment</h1>
-              <p className="text-gray-500 text-xs">Step {currentStep} of {STEPS.length}</p>
+              <h1 className="font-bold text-gray-900 text-base">{t("risk_title")}</h1>
+              <p className="text-gray-500 text-xs">{t("step_of")} {currentStep} / {STEPS.length}</p>
             </div>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -303,23 +305,22 @@ export default function RiskAssessmentPage() {
           {currentStep > 1 && (
             <button type="button" onClick={() => setCurrentStep(s => s - 1)}
               className="flex-1 py-4 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold flex items-center justify-center gap-2">
-              <ChevronLeft className="w-4 h-4" /> Back
+              <ChevronLeft className="w-4 h-4" /> {t("back")}
             </button>
           )}
           {currentStep < STEPS.length ? (
             <button type="button" onClick={() => setCurrentStep(s => s + 1)}
               className="flex-1 py-4 rounded-2xl bg-primary-500 text-white font-semibold flex items-center justify-center gap-2 shadow-glow-primary">
-              Next <ChevronRight className="w-4 h-4" />
+              {t("next")} <ChevronRight className="w-4 h-4" />
             </button>
           ) : (
             <button type="submit" disabled={assessMutation.isPending}
               className="flex-1 py-4 rounded-2xl bg-primary-500 text-white font-bold flex items-center justify-center gap-2 shadow-glow-primary disabled:opacity-60">
               {assessMutation.isPending ? (
-                <><span className="animate-spin">...</span> Analyzing...</>
+                <><span className="animate-spin">...</span> {t("analyzing")}</>
               ) : (
-                <><Activity className="w-4 h-4" /> Get Assessment</>
+                <><Activity className="w-4 h-4" /> {t("get_assessment")}</>
               )}
-            </button>
           )}
         </div>
       </form>
@@ -328,6 +329,7 @@ export default function RiskAssessmentPage() {
 }
 
 function StepHeader({ step }: { step: typeof STEPS[0] }) {
+  const { t } = useTranslation();
   const Icon = step.icon;
   return (
     <div className="flex items-center gap-3">
@@ -335,8 +337,8 @@ function StepHeader({ step }: { step: typeof STEPS[0] }) {
         <Icon className="w-5 h-5 text-primary-600" />
       </div>
       <div>
-        <h2 className="font-bold text-gray-900">{step.title}</h2>
-        <p className="text-gray-500 text-xs">{step.description}</p>
+        <h2 className="font-bold text-gray-900">{t(step.title)}</h2>
+        <p className="text-gray-500 text-xs">{t(step.description)}</p>
       </div>
     </div>
   );

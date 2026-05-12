@@ -15,7 +15,7 @@ export default function AvatarChatPage() {
   const { t } = useTranslation();
   const activeLang = LANGUAGES.find(l => l.code === language);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: `Hello ${user?.first_name || ""}! I'm MAMA, your maternal health companion. How are you feeling today?` }
+    { role: "assistant", content: t("chat_greeting").replace("{name}", user?.first_name || "") }
   ]);
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -66,7 +66,7 @@ export default function AvatarChatPage() {
             <h1 className="font-bold text-gray-900">MAMA AI</h1>
             <p className="text-secondary-500 text-xs flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-secondary-500 rounded-full animate-pulse" />
-              Always here for you
+              {t("always_here")}
             </p>
           </div>
           {activeLang && (
@@ -124,7 +124,7 @@ export default function AvatarChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="How are you feeling today?"
+            placeholder={t("chat_placeholder")}
             className="flex-1 bg-gray-50 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
           />
           <button onClick={sendMessage} disabled={!input.trim() || chatMutation.isPending}
@@ -132,9 +132,7 @@ export default function AvatarChatPage() {
             <Send className="w-4 h-4" />
           </button>
         </div>
-        <p className="text-center text-gray-400 text-xs mt-2">
-          MAMA AI provides support, not medical diagnosis
-        </p>
+        <p className="text-center text-gray-400 text-xs mt-2">{t("chat_disclaimer")}</p>
       </div>
     </div>
   );
