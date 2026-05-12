@@ -416,7 +416,10 @@ Emergency protocol: If you detect ANY emergency symptoms, immediately say:
 You are not a doctor. You provide information and support, not diagnosis.""",
 
     "luo": f"""You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform.
-You are speaking with a Luo (Dholuo) woman from western Kenya or Uganda. Respond in simple English that will be translated to Luo.
+You are speaking with a Luo (Dholuo) woman from western Kenya or Uganda.
+
+LANGUAGE: You MUST respond ENTIRELY in Dholuo (Luo). Every word of your response must be in Dholuo.
+If the user writes in English or Swahili, still respond in Dholuo.
 
 {LUO_CULTURAL_CONTEXT}
 
@@ -426,16 +429,18 @@ Your core principles:
 - Acknowledge traditional birth attendants (min nyuol) as partners in care
 - Be aware of traditional herb use — advise on safety gently
 - Celebrate the strength of Luo mothers and their community bonds
-- Use simple, clear English (it will be translated to Dholuo)
 - Always encourage ANC visits and skilled birth attendance
 
 Emergency protocol: If you detect ANY emergency, immediately say:
-"URGENT: Please go to the nearest health facility NOW or call 999/112."
+"CHANDRUOK: Dhi ir ospetar ma cok SANI SANI kata luong 999/112."
 
 You are not a doctor. You provide information, support, and guidance.""",
 
     "kik": f"""You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform.
-You are speaking with a Kikuyu (Gikuyu) woman from Kenya. Respond in simple English that will be translated to Kikuyu.
+You are speaking with a Kikuyu (Gikuyu) woman from Kenya.
+
+LANGUAGE: You MUST respond ENTIRELY in Kikuyu (Gĩkũyũ). Every word of your response must be in Kikuyu.
+If the user writes in English or Swahili, still respond in Kikuyu.
 
 {KIKUYU_CULTURAL_CONTEXT}
 
@@ -446,17 +451,19 @@ Your core principles:
 - Be aware of traditional herb use — advise on safety gently
 - Be sensitive to FGC-related complications during delivery
 - Empower the woman — Kikuyu women are strong and resourceful
-- Use simple, clear English (it will be translated to Kikuyu)
 - Always encourage ANC visits and skilled birth attendance
 - Address her warmly as "Mwari wa Ngai" (daughter of God) when encouraging
 
 Emergency protocol: If you detect ANY emergency, immediately say:
-"URGENT: Please go to the nearest health facility NOW or call 999/112."
+"HATARI: Nenda kirimu kĩa ũgima kĩa hĩndĩ ĩno RĨRĨA RĨRĨA kana ĩta 999/112."
 
 You are not a doctor. You provide information, support, and guidance.""",
 
     "maa": f"""You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform.
-You are speaking with a Maasai woman. Respond in simple English that will be translated to Maasai.
+You are speaking with a Maasai woman.
+
+LANGUAGE: You MUST respond ENTIRELY in Maa (Maasai language). Every word of your response must be in Maa.
+If the user writes in English or Swahili, still respond in Maa.
 
 {MAASAI_CULTURAL_CONTEXT}
 
@@ -467,11 +474,10 @@ Your core principles:
 - Never dismiss traditional practices outright — explain risks gently and respectfully
 - Celebrate the strength of Maasai mothers
 - Be aware of FGC-related complications — handle with extreme sensitivity
-- Use simple, clear English (it will be translated to Maasai)
 - Always encourage ANC visits and skilled birth attendance
 
 Emergency protocol: If you detect ANY emergency, immediately say:
-"URGENT: Please go to the nearest health facility NOW or send someone for help immediately."
+"ENKIAMA NABO: Naa osupuko kĩa ũgima SIANI SIANI kata ita 999/112."
 
 You are not a doctor. You provide information, support, and guidance.""",
 
@@ -820,31 +826,15 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Translate Maasai input → English → Mistral → translate back to Maasai."""
-        try:
-            from app.maasai_translator import maasai_to_english, english_to_maasai
-
-            # Translate user message to English for Mistral
-            english_message = maasai_to_english(user_message)
-            logger.info("Maasai->English: %s -> %s", user_message[:50], english_message[:50])
-
-            if self.api_key:
-                # Generate English response via Mistral with Maasai cultural context
-                english_response, confidence = self._mistral_response(
-                    ctx, english_message, intent, "maa", literacy_level, channel
+        """Send Maasai message directly to Mistral with a Maasai system prompt."""
+        if self.api_key:
+            try:
+                return self._mistral_response(
+                    ctx, user_message, intent, "maa", literacy_level, channel
                 )
-            else:
-                english_response = self._rule_based_response(intent, "en", literacy_level)
-                confidence = 0.70
-
-            # Translate response back to Maasai
-            maasai_response = english_to_maasai(english_response)
-            logger.info("English->Maasai translation complete")
-            return maasai_response, confidence
-
-        except Exception as exc:
-            logger.warning("Maasai response pipeline failed: %s", exc)
-            return self._rule_based_response(intent, "en", literacy_level), 0.50
+            except Exception as exc:
+                logger.warning("Maasai Mistral call failed: %s", exc)
+        return self._rule_based_response(intent, "maa", literacy_level), 0.70
 
     def _luo_response(
         self,
@@ -854,28 +844,15 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Translate Luo input -> English -> Mistral -> translate back to Luo."""
-        try:
-            from app.luo_translator import luo_to_english, english_to_luo
-
-            english_message = luo_to_english(user_message)
-            logger.info("Luo->English: %s -> %s", user_message[:50], english_message[:50])
-
-            if self.api_key:
-                english_response, confidence = self._mistral_response(
-                    ctx, english_message, intent, "luo", literacy_level, channel
+        """Send Luo message directly to Mistral with a Luo system prompt."""
+        if self.api_key:
+            try:
+                return self._mistral_response(
+                    ctx, user_message, intent, "luo", literacy_level, channel
                 )
-            else:
-                english_response = self._rule_based_response(intent, "en", literacy_level)
-                confidence = 0.70
-
-            luo_response = english_to_luo(english_response)
-            logger.info("English->Luo translation complete")
-            return luo_response, confidence
-
-        except Exception as exc:
-            logger.warning("Luo response pipeline failed: %s", exc)
-            return self._rule_based_response(intent, "en", literacy_level), 0.50
+            except Exception as exc:
+                logger.warning("Luo Mistral call failed: %s", exc)
+        return self._rule_based_response(intent, "luo", literacy_level), 0.70
 
     def _kikuyu_response(
         self,
@@ -885,28 +862,15 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Translate Kikuyu input -> English -> Mistral -> translate back to Kikuyu."""
-        try:
-            from app.kikuyu_translator import kikuyu_to_english, english_to_kikuyu
-
-            english_message = kikuyu_to_english(user_message)
-            logger.info("Kikuyu->English: %s -> %s", user_message[:50], english_message[:50])
-
-            if self.api_key:
-                english_response, confidence = self._mistral_response(
-                    ctx, english_message, intent, "kik", literacy_level, channel
+        """Send Kikuyu message directly to Mistral with a Kikuyu system prompt."""
+        if self.api_key:
+            try:
+                return self._mistral_response(
+                    ctx, user_message, intent, "kik", literacy_level, channel
                 )
-            else:
-                english_response = self._rule_based_response(intent, "en", literacy_level)
-                confidence = 0.70
-
-            kikuyu_response = english_to_kikuyu(english_response)
-            logger.info("English->Kikuyu translation complete")
-            return kikuyu_response, confidence
-
-        except Exception as exc:
-            logger.warning("Kikuyu response pipeline failed: %s", exc)
-            return self._rule_based_response(intent, "en", literacy_level), 0.50
+            except Exception as exc:
+                logger.warning("Kikuyu Mistral call failed: %s", exc)
+        return self._rule_based_response(intent, "kik", literacy_level), 0.70
 
     def _mistral_response(
         self,
