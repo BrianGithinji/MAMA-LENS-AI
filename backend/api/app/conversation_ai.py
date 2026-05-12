@@ -225,6 +225,18 @@ EMERGENCY_KEYWORDS = {
         # Seizure
         "enkibolata",
     ],
+    "kik": [
+        # Bleeding
+        "thakame", "thakame nyingi", "gutoka thakame",
+        # Pain
+        "kurwara", "kuumia",
+        # Emergency / help
+        "ndiaga", "ndiaga biu", "ndihia",
+        # Baby not moving
+        "mwana ndaguruka", "mwana ndathii",
+        # Seizure / collapse
+        "gutingithia", "kugwa",
+    ],
     "sw": [
         # Bleeding
         "kutoka damu", "damu nyingi", "damu ukeni", "kutokwa na damu",
@@ -305,6 +317,21 @@ WEEKLY_EDUCATION: Dict[int, Dict[str, str]] = {
 # Maasai cultural maternal health context
 # ---------------------------------------------------------------------------
 
+KIKUYU_CULTURAL_CONTEXT = """
+Kikuyu Cultural Context for Maternal Health:
+- Kikuyu women (Agikuyu) are from Central Kenya — Mount Kenya region
+- Traditional birth attendants (muthiri wa kuhanda) are respected community figures
+- The family unit (nyumba) and clan (mbari) are central to decision-making
+- Kikuyu diet: githeri (maize+beans), mukimo, irio, sweet potatoes, greens — acknowledge these
+- Many Kikuyu women are educated and may mix traditional and modern healthcare
+- Respect for elders (athuuri na atumia) is important in health decisions
+- Postpartum: mother rests, community brings food (ngwatio) — encourage this
+- Traditional herbs (miti shamba) are commonly used — advise safely
+- FGC (irua ria atumia) was historically practiced — be sensitive to delivery complications
+- Kikuyu women are resourceful and entrepreneurial — empower them with information
+- Many live near Nairobi or Central Kenya with reasonable clinic access
+"""
+
 MAASAI_CULTURAL_CONTEXT = """
 Maasai Cultural Context for Maternal Health:
 - Maasai women traditionally give birth at home assisted by elder women (entomononi)
@@ -343,6 +370,27 @@ Emergency protocol: If you detect ANY emergency symptoms, immediately say:
 "URGENT: Please go to the nearest health facility NOW or call emergency services."
 
 You are not a doctor. You provide information and support, not diagnosis.""",
+
+    "kik": f"""You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform.
+You are speaking with a Kikuyu (Gikuyu) woman from Kenya. Respond in simple English that will be translated to Kikuyu.
+
+{KIKUYU_CULTURAL_CONTEXT}
+
+Your core principles:
+- Show deep respect for Kikuyu culture and traditions
+- Acknowledge traditional birth attendants as partners in care
+- Reference familiar Kikuyu foods (githeri, mukimo, irio) in nutrition advice
+- Be aware of traditional herb use — advise on safety gently
+- Be sensitive to FGC-related complications during delivery
+- Empower the woman — Kikuyu women are strong and resourceful
+- Use simple, clear English (it will be translated to Kikuyu)
+- Always encourage ANC visits and skilled birth attendance
+- Address her warmly as "Mwari wa Ngai" (daughter of God) when encouraging
+
+Emergency protocol: If you detect ANY emergency, immediately say:
+"URGENT: Please go to the nearest health facility NOW or call 999/112."
+
+You are not a doctor. You provide information, support, and guidance.""",
 
     "maa": f"""You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform.
 You are speaking with a Maasai woman. Respond in simple English that will be translated to Maasai.
@@ -663,9 +711,11 @@ class ConversationalAI:
         channel: str,
     ) -> Tuple[str, float]:
         """Generate response using Mistral AI or fallback to rule-based."""
-        # For Maasai: translate input to English, generate response, translate back
+        # For indigenous languages: translate input to English, generate response, translate back
         if language == "maa":
             return self._maasai_response(ctx, user_message, intent, literacy_level, channel)
+        if language == "kik":
+            return self._kikuyu_response(ctx, user_message, intent, literacy_level, channel)
 
         if self.api_key:
             try:
@@ -707,6 +757,37 @@ class ConversationalAI:
 
         except Exception as exc:
             logger.warning("Maasai response pipeline failed: %s", exc)
+            return self._rule_based_response(intent, "en", literacy_level), 0.50
+
+    def _kikuyu_response(
+        self,
+        ctx: ConversationContext,
+        user_message: str,
+        intent: Intent,
+        literacy_level: str,
+        channel: str,
+    ) -> Tuple[str, float]:
+        """Translate Kikuyu input -> English -> Mistral -> translate back to Kikuyu."""
+        try:
+            from app.kikuyu_translator import kikuyu_to_english, english_to_kikuyu
+
+            english_message = kikuyu_to_english(user_message)
+            logger.info("Kikuyu->English: %s -> %s", user_message[:50], english_message[:50])
+
+            if self.api_key:
+                english_response, confidence = self._mistral_response(
+                    ctx, english_message, intent, "kik", literacy_level, channel
+                )
+            else:
+                english_response = self._rule_based_response(intent, "en", literacy_level)
+                confidence = 0.70
+
+            kikuyu_response = english_to_kikuyu(english_response)
+            logger.info("English->Kikuyu translation complete")
+            return kikuyu_response, confidence
+
+        except Exception as exc:
+            logger.warning("Kikuyu response pipeline failed: %s", exc)
             return self._rule_based_response(intent, "en", literacy_level), 0.50
 
     def _mistral_response(
