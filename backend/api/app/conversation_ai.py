@@ -919,7 +919,7 @@ class ConversationalAI:
     ) -> Tuple[str, float]:
         """Call Mistral AI API for response generation."""
         try:
-            from mistralai.client.sdk import Mistral  # type: ignore
+            from mistralai import Mistral  # type: ignore
 
             client = Mistral(api_key=self.api_key)
 
