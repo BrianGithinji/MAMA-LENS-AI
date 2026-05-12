@@ -35,7 +35,15 @@ class Intent(str, Enum):
     POSTPARTUM = "postpartum"
     GENERAL_QUESTION = "general_question"
     GREETING = "greeting"
+    CAPABILITY_QUERY = "capability_query"
     UNKNOWN = "unknown"
+
+
+class RiskLevel(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    EMERGENCY = "emergency"
 
 
 class MessageChannel(str, Enum):
@@ -114,7 +122,8 @@ INTENT_PATTERNS: Dict[str, List[str]] = {
         # English
         r"\b(bleeding|hemorrhage|seizure|unconscious|not\s+breathing|cord\s+prolapse)\b",
         r"\b(severe\s+pain|chest\s+pain|can.t\s+breathe|baby\s+not\s+moving)\b",
-        r"\b(emergency|urgent|help\s+me|dying|ambulance|hospital\s+now)\b",
+        r"\b(emergency|urgent|dying|ambulance|hospital\s+now)\b",
+        r"\b(please\s+help\s+me|someone\s+help|help\s+me\s+i)\b",
         r"\b(heavy\s+bleeding|blood\s+clots|water\s+broke|preterm\s+labor)\b",
         # Kiswahili
         r"\b(damu\s+nyingi|kutoka\s+damu|degedege|mshtuko|kupoteza\s+fahamu)\b",
@@ -198,11 +207,19 @@ INTENT_PATTERNS: Dict[str, List[str]] = {
         r"\b(tumbo\s+linakaza|maumivu\s+ya\s+kuzaa|hospitali\s+sasa)\b",
     ],
     Intent.GREETING: [
-        # English + Kiswahili
+        # English + Kiswahili — pure greetings only
         r"^(hi|hello|hey|good\s+(morning|afternoon|evening))\b",
         r"^(habari|mambo|hujambo|shikamoo|salama|karibu|salam)\b",
         r"\b(habari\s+yako|habari\s+za\s+asubuhi|habari\s+za\s+jioni)\b",
-        r"\b(how\s+are\s+you|nice\s+to\s+meet|start|begin|nianze)\b",
+        r"\b(how\s+are\s+you|nice\s+to\s+meet)\b",
+    ],
+    Intent.CAPABILITY_QUERY: [
+        # Questions about what MAMA can do
+        r"\b(what\s+can\s+you\s+do|how\s+can\s+you\s+help|what\s+do\s+you\s+do)\b",
+        r"\b(what\s+are\s+you|who\s+are\s+you|tell\s+me\s+about\s+yourself)\b",
+        r"\b(what\s+services|what\s+features|what\s+support)\b",
+        r"\b(unaweza\s+kunisaidia\s+vipi|unafanya\s+nini|wewe\s+ni\s+nani)\b",
+        r"\b(start|begin|nianze|get\s+started)\b",
     ],
 }
 
@@ -572,24 +589,25 @@ class ConversationalAI:
         # Add user message to history
         ctx.add_message("user", user_message)
 
-        # 1. Emergency check (highest priority)
-        is_emergency, emergency_type = self._check_emergency(user_message, language)
-
-        # 2. Intent classification
+        # ── Layer 1: Intent Detection ──────────────────────────────────
         intent = self._classify_intent(user_message)
 
-        if is_emergency:
+        # ── Layer 2: Risk Classification ───────────────────────────────
+        is_emergency, emergency_type = self._check_emergency(user_message, language)
+        risk = self._classify_risk(intent, is_emergency)
+
+        if risk == RiskLevel.EMERGENCY:
             intent = Intent.EMERGENCY
 
         ctx.current_intent = intent
+        ctx.risk_level = risk.value
 
-        # 3. Education content for relevant intents
+        # ── Layer 3: Response Generation ───────────────────────────────
         education_content = self._get_education_content(
             intent, gestational_age_weeks or ctx.gestational_age_weeks, language
         )
 
-        # 4. Generate response
-        if is_emergency:
+        if risk == RiskLevel.EMERGENCY:
             response_text = self._emergency_response(emergency_type, language)
             requires_handoff = True
             confidence = 1.0
@@ -597,7 +615,9 @@ class ConversationalAI:
             response_text, confidence = self._generate_response(
                 ctx, user_message, intent, language, literacy_level, channel
             )
-            requires_handoff = intent == Intent.EMOTIONAL_SUPPORT and confidence < 0.6
+            requires_handoff = (
+                intent == Intent.EMOTIONAL_SUPPORT and confidence < 0.6
+            ) or risk == RiskLevel.HIGH
 
         # 5. Simplify for low literacy / SMS
         if literacy_level == "low" or channel in ("sms", "ussd"):
@@ -693,10 +713,29 @@ class ConversationalAI:
     # Emergency detection
     # ------------------------------------------------------------------
 
+    def _classify_risk(self, intent: Intent, is_emergency: bool) -> RiskLevel:
+        """Layer 2: Map intent + emergency flag to a risk level."""
+        if is_emergency or intent == Intent.EMERGENCY:
+            return RiskLevel.EMERGENCY
+        if intent in (Intent.LABOR_SIGNS, Intent.FETAL_MOVEMENT):
+            return RiskLevel.HIGH
+        if intent in (Intent.SYMPTOM_CHECK, Intent.EMOTIONAL_SUPPORT, Intent.MEDICATION_QUERY):
+            return RiskLevel.MEDIUM
+        return RiskLevel.LOW
+
     def _check_emergency(
         self, text: str, language: str
     ) -> Tuple[bool, Optional[str]]:
-        """Check for emergency keywords in any supported language."""
+        """Check for emergency keywords in any supported language.
+
+        Greeting and capability queries are never emergencies regardless
+        of incidental keyword overlap.
+        """
+        # Layer 1 guard: non-emergency intents short-circuit emergency detection
+        pre_intent = self._classify_intent(text)
+        if pre_intent in (Intent.GREETING, Intent.CAPABILITY_QUERY):
+            return False, None
+
         text_lower = text.lower()
 
         # Check compiled patterns
@@ -933,19 +972,77 @@ class ConversationalAI:
         """Fallback rule-based responses by intent — full Kiswahili support."""
         responses: Dict[Intent, Dict[str, str]] = {
             Intent.GREETING: {
-                "en": "Hello! I am MAMA, your maternal health assistant. How are you feeling today? How can I help you?",
-                "sw": (
-                    "Habari! Mimi ni MAMA, msaidizi wako wa afya ya uzazi. 💚\n"
-                    "Unajisikiaje leo? Ninaweza kukusaidia vipi?\n\n"
-                    "Unaweza kuniuliza kuhusu:\n"
-                    "• Dalili za ujauzito\n"
-                    "• Lishe na chakula\n"
-                    "• Ziara za kliniki (ANC)\n"
-                    "• Mwendo wa mtoto\n"
-                    "• Msaada wa kihisia\n\n"
-                    "Niko hapa kukusaidia!"
+                "en": (
+                    "Hello! I'm MAMA, your maternal health companion. 🌸\n\n"
+                    "I can support you with:\n"
+                    "• Pregnancy and maternal health information\n"
+                    "• Nutrition and wellness guidance\n"
+                    "• Baby care tips\n"
+                    "• Appointment reminders\n"
+                    "• Recognising danger signs during pregnancy\n"
+                    "• Mental wellness support\n\n"
+                    "If you are experiencing severe symptoms such as heavy bleeding, "
+                    "difficulty breathing, severe pain, or seizures, please contact "
+                    "emergency services (999 / 112) or visit the nearest health facility immediately.\n\n"
+                    "How can I support you today?"
                 ),
-                "fr": "Bonjour! Je suis MAMA, votre assistante de sante maternelle. Comment vous sentez-vous aujourd hui?",
+                "sw": (
+                    "Habari! Mimi ni MAMA, msaidizi wako wa afya ya uzazi. 🌸\n\n"
+                    "Ninaweza kukusaidia na:\n"
+                    "• Taarifa za ujauzito na afya ya uzazi\n"
+                    "• Mwongozo wa lishe na ustawi\n"
+                    "• Vidokezo vya utunzaji wa mtoto\n"
+                    "• Ukumbusho wa miadi ya kliniki\n"
+                    "• Kutambua dalili za hatari wakati wa ujauzito\n"
+                    "• Msaada wa afya ya akili\n\n"
+                    "Kama una dalili kali kama damu nyingi, ugumu wa kupumua, "
+                    "maumivu makali, au degedege, tafadhali piga simu 999/112 "
+                    "au nenda kituo cha afya kilicho karibu mara moja.\n\n"
+                    "Ninaweza kukusaidia vipi leo?"
+                ),
+                "fr": (
+                    "Bonjour! Je suis MAMA, votre assistante de sante maternelle. 🌸\n\n"
+                    "Je peux vous aider avec:\n"
+                    "• Informations sur la grossesse\n"
+                    "• Conseils nutritionnels\n"
+                    "• Rappels de rendez-vous\n"
+                    "• Signes de danger pendant la grossesse\n\n"
+                    "En cas d urgence (saignements, convulsions, douleurs severes), "
+                    "appelez le 999/112 immediatement.\n\n"
+                    "Comment puis-je vous aider aujourd hui?"
+                ),
+            },
+            Intent.CAPABILITY_QUERY: {
+                "en": (
+                    "I can help with:\n"
+                    "• Pregnancy guidance and weekly updates\n"
+                    "• Maternal health education\n"
+                    "• Nutrition and supplement advice\n"
+                    "• Appointment reminders and ANC schedules\n"
+                    "• Danger sign awareness\n"
+                    "• Baby care information\n"
+                    "• Mental wellness and emotional support\n"
+                    "• Connecting you to nearby clinics (NHIF/SHA accepted)\n\n"
+                    "If you are experiencing severe pain, heavy bleeding, difficulty "
+                    "breathing, seizures, or another emergency, please seek medical "
+                    "help immediately (999 / 112).\n\n"
+                    "How can I support you today?"
+                ),
+                "sw": (
+                    "Ninaweza kukusaidia na:\n"
+                    "• Mwongozo wa ujauzito na masasisho ya kila wiki\n"
+                    "• Elimu ya afya ya uzazi\n"
+                    "• Ushauri wa lishe na virutubisho\n"
+                    "• Ukumbusho wa miadi na ratiba ya ANC\n"
+                    "• Kutambua dalili za hatari\n"
+                    "• Taarifa za utunzaji wa mtoto\n"
+                    "• Msaada wa kihisia na afya ya akili\n"
+                    "• Kukupata kliniki karibu nawe (NHIF/SHA inakubaliwa)\n\n"
+                    "Kama una maumivu makali, damu nyingi, ugumu wa kupumua, "
+                    "au dharura nyingine, tafadhali tafuta msaada wa kimatibabu "
+                    "mara moja (999 / 112).\n\n"
+                    "Ninaweza kukusaidia vipi leo?"
+                ),
             },
             Intent.SYMPTOM_CHECK: {
                 "en": "I hear you are experiencing some symptoms. Can you describe them in more detail? When did they start? Are they getting worse?",
