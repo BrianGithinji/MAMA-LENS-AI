@@ -123,7 +123,7 @@ export default function DashboardPage() {
 
           <p className="text-primary-100 text-sm font-medium">{greeting()},</p>
           <h1 className="text-white text-2xl font-bold mt-0.5">
-            {user?.first_name}
+            {user?.first_name} 💚
           </h1>
           <p className="text-primary-100 text-sm mt-1">
             Here to support you every step of the way
