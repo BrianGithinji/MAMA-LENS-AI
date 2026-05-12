@@ -2,6 +2,7 @@ import { Outlet, NavLink } from "react-router-dom";
 import { Home, Activity, MessageCircle, Calendar, User, BookHeart } from "lucide-react";
 import { clsx } from "clsx";
 import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../components/ui/LanguageSwitcher";
 
 export default function DashboardLayout() {
   const { t } = useTranslation();
@@ -16,6 +17,9 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-warm-50">
+      <div className="fixed top-3 right-3 z-50">
+        <LanguageSwitcher />
+      </div>
       <main className="pb-20">
         <Outlet />
       </main>

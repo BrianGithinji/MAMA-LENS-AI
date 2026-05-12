@@ -711,7 +711,7 @@ const resources = {
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: "en",
+  lng: localStorage.getItem("mama_lang") ?? "en",
   fallbackLng: "en",
   interpolation: { escapeValue: false },
 });
