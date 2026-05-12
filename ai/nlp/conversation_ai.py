@@ -387,7 +387,7 @@ class ConversationalAI:
     """
 
     def __init__(self, mistral_api_key: Optional[str] = None) -> None:
-        self.api_key = mistral_api_key or os.getenv("MISTRAL_API_KEY", "")
+        self.api_key = (mistral_api_key or os.getenv("MISTRAL_API_KEY", "")).strip()
         self._intent_patterns = self._compile_intent_patterns()
         self._emergency_patterns = self._compile_emergency_patterns()
         self._sessions: Dict[str, ConversationContext] = {}
