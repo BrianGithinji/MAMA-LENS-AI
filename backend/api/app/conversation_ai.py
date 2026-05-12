@@ -237,6 +237,20 @@ EMERGENCY_KEYWORDS = {
         # Seizure / collapse
         "gutingithia", "kugwa",
     ],
+    "luo": [
+        # Bleeding
+        "remo", "remo mathoth", "remo wuok",
+        # Pain
+        "rem", "rem matek", "chandruok",
+        # Emergency / help
+        "kony", "kony mapiyo", "chandruok matek",
+        # Baby not moving
+        "nyathi ok lunge", "nyathi ok miel",
+        # Seizure / collapse
+        "goyo", "podho piny",
+        # Water breaking
+        "pi owuok",
+    ],
     "sw": [
         # Bleeding
         "kutoka damu", "damu nyingi", "damu ukeni", "kutokwa na damu",
@@ -317,8 +331,21 @@ WEEKLY_EDUCATION: Dict[int, Dict[str, str]] = {
 # Maasai cultural maternal health context
 # ---------------------------------------------------------------------------
 
+LUO_CULTURAL_CONTEXT = """
+Luo (Dholuo) Cultural Context for Maternal Health:
+- Luo people (Joluo) live around Lake Victoria in western Kenya and Uganda
+- Traditional birth attendants (min nyuol) are highly respected
+- The extended family (gweng) plays a central role in pregnancy and birth decisions
+- Luo diet: fish (rech) from Lake Victoria, ugali (kuon), vegetables, sorghum — acknowledge these
+- Fish is a key protein source — excellent for pregnancy nutrition
+- Respect for elders and the husband's family in birth decisions is important
+- Postpartum: mother is cared for by female relatives, rests for weeks
+- Traditional herbs and practices are common — advise on safety respectfully
+- Many Luo women have access to clinics in Kisumu and surrounding areas
+- Grief and pregnancy loss are communal — community mourning is important
+"""
+
 KIKUYU_CULTURAL_CONTEXT = """
-Kikuyu Cultural Context for Maternal Health:
 - Kikuyu women (Agikuyu) are from Central Kenya — Mount Kenya region
 - Traditional birth attendants (muthiri wa kuhanda) are respected community figures
 - The family unit (nyumba) and clan (mbari) are central to decision-making
@@ -370,6 +397,25 @@ Emergency protocol: If you detect ANY emergency symptoms, immediately say:
 "URGENT: Please go to the nearest health facility NOW or call emergency services."
 
 You are not a doctor. You provide information and support, not diagnosis.""",
+
+    "luo": f"""You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform.
+You are speaking with a Luo (Dholuo) woman from western Kenya or Uganda. Respond in simple English that will be translated to Luo.
+
+{LUO_CULTURAL_CONTEXT}
+
+Your core principles:
+- Show deep respect for Luo culture and the role of the extended family
+- Reference familiar Luo foods (rech/fish, kuon/ugali) in nutrition advice
+- Acknowledge traditional birth attendants (min nyuol) as partners in care
+- Be aware of traditional herb use — advise on safety gently
+- Celebrate the strength of Luo mothers and their community bonds
+- Use simple, clear English (it will be translated to Dholuo)
+- Always encourage ANC visits and skilled birth attendance
+
+Emergency protocol: If you detect ANY emergency, immediately say:
+"URGENT: Please go to the nearest health facility NOW or call 999/112."
+
+You are not a doctor. You provide information, support, and guidance.""",
 
     "kik": f"""You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform.
 You are speaking with a Kikuyu (Gikuyu) woman from Kenya. Respond in simple English that will be translated to Kikuyu.
@@ -716,6 +762,8 @@ class ConversationalAI:
             return self._maasai_response(ctx, user_message, intent, literacy_level, channel)
         if language == "kik":
             return self._kikuyu_response(ctx, user_message, intent, literacy_level, channel)
+        if language == "luo":
+            return self._luo_response(ctx, user_message, intent, literacy_level, channel)
 
         if self.api_key:
             try:
@@ -757,6 +805,37 @@ class ConversationalAI:
 
         except Exception as exc:
             logger.warning("Maasai response pipeline failed: %s", exc)
+            return self._rule_based_response(intent, "en", literacy_level), 0.50
+
+    def _luo_response(
+        self,
+        ctx: ConversationContext,
+        user_message: str,
+        intent: Intent,
+        literacy_level: str,
+        channel: str,
+    ) -> Tuple[str, float]:
+        """Translate Luo input -> English -> Mistral -> translate back to Luo."""
+        try:
+            from app.luo_translator import luo_to_english, english_to_luo
+
+            english_message = luo_to_english(user_message)
+            logger.info("Luo->English: %s -> %s", user_message[:50], english_message[:50])
+
+            if self.api_key:
+                english_response, confidence = self._mistral_response(
+                    ctx, english_message, intent, "luo", literacy_level, channel
+                )
+            else:
+                english_response = self._rule_based_response(intent, "en", literacy_level)
+                confidence = 0.70
+
+            luo_response = english_to_luo(english_response)
+            logger.info("English->Luo translation complete")
+            return luo_response, confidence
+
+        except Exception as exc:
+            logger.warning("Luo response pipeline failed: %s", exc)
             return self._rule_based_response(intent, "en", literacy_level), 0.50
 
     def _kikuyu_response(
