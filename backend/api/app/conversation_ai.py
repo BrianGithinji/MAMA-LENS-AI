@@ -213,6 +213,18 @@ INTENT_PATTERNS: Dict[str, List[str]] = {
 EMERGENCY_KEYWORDS = {
     "en": ["bleeding", "seizure", "unconscious", "not breathing", "cord prolapse",
            "severe pain", "baby not moving", "heavy bleeding", "emergency"],
+    "maa": [
+        # Bleeding
+        "oltau", "nkare oltau", "enkare oltau",
+        # Pain
+        "enkiama", "enkiama nabo", "enkiama naibor",
+        # Emergency / help
+        "aidim", "tua", "sopa enkiama",
+        # Baby not moving
+        "entomononi", "maa entomononi",
+        # Seizure
+        "enkibolata",
+    ],
     "sw": [
         # Bleeding
         "kutoka damu", "damu nyingi", "damu ukeni", "kutokwa na damu",
@@ -289,6 +301,25 @@ WEEKLY_EDUCATION: Dict[int, Dict[str, str]] = {
 # System prompts
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Maasai cultural maternal health context
+# ---------------------------------------------------------------------------
+
+MAASAI_CULTURAL_CONTEXT = """
+Maasai Cultural Context for Maternal Health:
+- Maasai women traditionally give birth at home assisted by elder women (entomononi)
+- Respect for elders and traditional birth attendants is paramount
+- Cattle and livestock are central to Maasai identity — use relatable analogies
+- The community (enkiama) plays a strong role in supporting mothers
+- Traditional practices: some are safe, some (like cutting) are harmful — be sensitive but clear
+- Maasai diet is rich in milk (enkare), meat, and blood — acknowledge this in nutrition advice
+- Many Maasai women may have limited access to formal healthcare facilities
+- Encourage clinic visits while respecting traditional values
+- Address the husband/family respectfully as decisions are often communal
+- Female genital cutting (FGC) is practiced — be aware of complications during delivery
+- Postpartum: mothers rest for weeks, supported by community — encourage this
+"""
+
 SYSTEM_PROMPTS: Dict[str, str] = {
     "en": """You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform,
 serving pregnant women and new mothers primarily in Africa.
@@ -312,6 +343,26 @@ Emergency protocol: If you detect ANY emergency symptoms, immediately say:
 "URGENT: Please go to the nearest health facility NOW or call emergency services."
 
 You are not a doctor. You provide information and support, not diagnosis.""",
+
+    "maa": f"""You are MAMA, a compassionate AI maternal health assistant for the MAMA-LENS platform.
+You are speaking with a Maasai woman. Respond in simple English that will be translated to Maasai.
+
+{MAASAI_CULTURAL_CONTEXT}
+
+Your core principles:
+- Show deep respect for Maasai culture and traditions
+- Acknowledge traditional birth attendants (entomononi) as partners, not obstacles
+- Be aware that the nearest clinic may be far — give practical, actionable advice
+- Never dismiss traditional practices outright — explain risks gently and respectfully
+- Celebrate the strength of Maasai mothers
+- Be aware of FGC-related complications — handle with extreme sensitivity
+- Use simple, clear English (it will be translated to Maasai)
+- Always encourage ANC visits and skilled birth attendance
+
+Emergency protocol: If you detect ANY emergency, immediately say:
+"URGENT: Please go to the nearest health facility NOW or send someone for help immediately."
+
+You are not a doctor. You provide information, support, and guidance.""",
 
     "sw": """Wewe ni MAMA, msaidizi wa AI wa afya ya uzazi kwa jukwaa la MAMA-LENS.
 Unahudumia wanawake wajawazito na mama wapya Afrika Mashariki, hasa Kenya, Tanzania na Uganda.
@@ -612,6 +663,10 @@ class ConversationalAI:
         channel: str,
     ) -> Tuple[str, float]:
         """Generate response using Mistral AI or fallback to rule-based."""
+        # For Maasai: translate input to English, generate response, translate back
+        if language == "maa":
+            return self._maasai_response(ctx, user_message, intent, literacy_level, channel)
+
         if self.api_key:
             try:
                 return self._mistral_response(ctx, user_message, intent, language, literacy_level, channel)
@@ -619,6 +674,40 @@ class ConversationalAI:
                 logger.warning("Mistral AI call failed: %s. Using fallback.", exc)
 
         return self._rule_based_response(intent, language, literacy_level), 0.70
+
+    def _maasai_response(
+        self,
+        ctx: ConversationContext,
+        user_message: str,
+        intent: Intent,
+        literacy_level: str,
+        channel: str,
+    ) -> Tuple[str, float]:
+        """Translate Maasai input → English → Mistral → translate back to Maasai."""
+        try:
+            from app.maasai_translator import maasai_to_english, english_to_maasai
+
+            # Translate user message to English for Mistral
+            english_message = maasai_to_english(user_message)
+            logger.info("Maasai->English: %s -> %s", user_message[:50], english_message[:50])
+
+            if self.api_key:
+                # Generate English response via Mistral with Maasai cultural context
+                english_response, confidence = self._mistral_response(
+                    ctx, english_message, intent, "maa", literacy_level, channel
+                )
+            else:
+                english_response = self._rule_based_response(intent, "en", literacy_level)
+                confidence = 0.70
+
+            # Translate response back to Maasai
+            maasai_response = english_to_maasai(english_response)
+            logger.info("English->Maasai translation complete")
+            return maasai_response, confidence
+
+        except Exception as exc:
+            logger.warning("Maasai response pipeline failed: %s", exc)
+            return self._rule_based_response(intent, "en", literacy_level), 0.50
 
     def _mistral_response(
         self,

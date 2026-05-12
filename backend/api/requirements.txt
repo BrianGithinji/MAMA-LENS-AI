@@ -25,6 +25,9 @@ email-validator==2.1.1
 mistralai==2.4.5
 numpy==1.26.4
 scikit-learn==1.5.0
+transformers==4.51.3
+sentencepiece==0.2.0
+torch==2.3.1
 
 # ─── Utilities ───────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
