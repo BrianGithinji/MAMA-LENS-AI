@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     AFRICASTALKING_SENDER_ID: str = "MAMALENS"
 
     ALLOWED_ORIGINS: List[str] = [
+        "https://mama-lens.netlify.app",
+        "https://mama-lens-ai.netlify.app",
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:3000",

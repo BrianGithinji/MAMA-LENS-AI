@@ -51,13 +51,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins = [
+# Merge hardcoded production origins with any set via ALLOWED_ORIGINS env var
+_base_origins = [
     "https://mama-lens.netlify.app",
+    "https://mama-lens-ai.netlify.app",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
 ]
+origins = list(set(_base_origins + settings.ALLOWED_ORIGINS))
 
 app.add_middleware(
     CORSMiddleware,
