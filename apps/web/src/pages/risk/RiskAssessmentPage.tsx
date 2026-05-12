@@ -321,6 +321,7 @@ export default function RiskAssessmentPage() {
               ) : (
                 <><Activity className="w-4 h-4" /> {t("get_assessment")}</>
               )}
+            </button>
           )}
         </div>
       </form>
