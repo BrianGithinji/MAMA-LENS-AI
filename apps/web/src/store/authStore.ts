@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import i18n from "../i18n";
 
 interface User {
   id: string;
@@ -18,11 +19,13 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  language: string;
 
   login: (tokens: { access_token: string; refresh_token: string }, user: User) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   setTokens: (access_token: string, refresh_token: string) => void;
+  setLanguage: (lang: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -32,14 +35,19 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       refreshToken: null,
+      language: "en",
 
-      login: (tokens, user) =>
+      login: (tokens, user) => {
+        const lang = user.preferred_language || "en";
+        i18n.changeLanguage(lang);
         set({
           isAuthenticated: true,
           user,
           accessToken: tokens.access_token,
           refreshToken: tokens.refresh_token,
-        }),
+          language: lang,
+        });
+      },
 
       logout: () =>
         set({
@@ -47,6 +55,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           accessToken: null,
           refreshToken: null,
+          language: "en",
         }),
 
       updateUser: (updates) =>
@@ -56,6 +65,14 @@ export const useAuthStore = create<AuthState>()(
 
       setTokens: (access_token, refresh_token) =>
         set({ accessToken: access_token, refreshToken: refresh_token }),
+
+      setLanguage: (lang: string) => {
+        i18n.changeLanguage(lang);
+        set((state) => ({
+          language: lang,
+          user: state.user ? { ...state.user, preferred_language: lang } : null,
+        }));
+      },
     }),
     {
       name: "mamalens-auth",
@@ -64,7 +81,11 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
+        language: state.language,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.language) i18n.changeLanguage(state.language);
+      },
     }
   )
 );

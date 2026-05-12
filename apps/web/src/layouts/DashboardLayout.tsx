@@ -1,17 +1,19 @@
-import { Outlet, NavLink, Link } from "react-router-dom";
+import { Outlet, NavLink } from "react-router-dom";
 import { Home, Activity, MessageCircle, Calendar, User, BookHeart } from "lucide-react";
 import { clsx } from "clsx";
-import Logo from "../components/brand/Logo";
-
-const NAV_ITEMS = [
-  { icon: Home, label: "Home", href: "/dashboard" },
-  { icon: Activity, label: "Risk", href: "/risk-assessment" },
-  { icon: MessageCircle, label: "MAMA AI", href: "/avatar" },
-  { icon: BookHeart, label: "Journal", href: "/daily-journal" },
-  { icon: User, label: "Profile", href: "/profile" },
-];
+import { useTranslation } from "react-i18next";
 
 export default function DashboardLayout() {
+  const { t } = useTranslation();
+
+  const NAV_ITEMS = [
+    { icon: Home,          label: t("home"),    href: "/dashboard" },
+    { icon: Activity,      label: t("risk"),    href: "/risk-assessment" },
+    { icon: MessageCircle, label: t("mama_ai"), href: "/avatar" },
+    { icon: BookHeart,     label: t("journal"), href: "/daily-journal" },
+    { icon: User,          label: t("profile"), href: "/profile" },
+  ];
+
   return (
     <div className="min-h-screen bg-warm-50">
       <main className="pb-20">

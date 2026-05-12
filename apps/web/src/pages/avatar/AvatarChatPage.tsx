@@ -4,12 +4,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Send } from "lucide-react";
 import { avatarAPI } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
+import { LANGUAGES } from "../../i18n";
 import Logo from "../../components/brand/Logo";
+import { useTranslation } from "react-i18next";
 
 interface Message { role: "user" | "assistant"; content: string; emotion?: string; }
 
 export default function AvatarChatPage() {
-  const { user } = useAuthStore();
+  const { user, language } = useAuthStore();
+  const { t } = useTranslation();
+  const activeLang = LANGUAGES.find(l => l.code === language);
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: `Hello ${user?.first_name || ""}! I'm MAMA, your maternal health companion. How are you feeling today?` }
   ]);
@@ -23,7 +27,7 @@ export default function AvatarChatPage() {
   const chatMutation = useMutation({
     mutationFn: (message: string) => avatarAPI.chat({
       message,
-      language: user?.preferred_language || "en",
+      language: language || user?.preferred_language || "en",
       session_id: sessionId.current,
       voice_response: false,
     }),
@@ -65,6 +69,11 @@ export default function AvatarChatPage() {
               Always here for you
             </p>
           </div>
+          {activeLang && (
+            <span className="ml-auto text-xs bg-primary-50 text-primary-600 font-medium px-2.5 py-1 rounded-full">
+              {activeLang.flag} {activeLang.nativeLabel}
+            </span>
+          )}
         </div>
       </div>
 

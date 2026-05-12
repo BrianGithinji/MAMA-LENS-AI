@@ -126,10 +126,13 @@ export default function RegisterPage() {
             {...register("preferred_language")}
             className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
           >
-            <option value="en">English</option>
-            <option value="sw">Swahili</option>
-            <option value="fr">French</option>
-            <option value="ar">Arabic</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="sw">🇰🇪 Kiswahili (Swahili)</option>
+            <option value="luo">🇰🇪 Dholuo (Luo)</option>
+            <option value="kik">🇰🇪 Gĩkũyũ (Kikuyu)</option>
+            <option value="maa">🇰🇪 Maa (Maasai)</option>
+            <option value="fr">🇫🇷 Français (French)</option>
+            <option value="ar">🇸🇦 العربية (Arabic)</option>
           </select>
         </div>
 
