@@ -63,7 +63,12 @@ class RiskInput:
     previous_preeclampsia: bool = False
     previous_gestational_diabetes: bool = False
     previous_preterm_birth: bool = False
+    previous_postpartum_hemorrhage: bool = False   # paper: PPH history = high risk
     is_multiple_pregnancy: bool = False
+    parity: int = 0                                # paper: grand multiparity (>=5) = risk
+    anc_visits: int = 0                            # paper: <4 ANC visits = high risk
+    skilled_birth_attendant: bool = True           # paper: no SBA = major mortality risk
+    facility_distance_km: float = 0.0             # paper: referral delay = top predictor
 
     # Lifestyle
     smoking: bool = False
@@ -364,6 +369,11 @@ class MaternalRiskEngine:
             score += 0.05
         if "kidney" in " ".join(inp.pre_existing_conditions).lower():
             score += 0.05
+        # Paper: grand multiparity and no ANC increase preeclampsia risk
+        if inp.parity >= 5:
+            score += 0.08
+        if inp.anc_visits < 4:
+            score += 0.05
 
         return min(score, 1.0)
 
@@ -396,6 +406,12 @@ class MaternalRiskEngine:
             score += 0.10
         if "sickle_cell" in " ".join(inp.pre_existing_conditions).lower():
             score += 0.15
+        # Paper: HIV increases anemia risk significantly in Africa
+        if "hiv" in " ".join(inp.pre_existing_conditions).lower():
+            score += 0.12
+        # Paper: low ANC attendance = missed anemia detection
+        if inp.anc_visits < 4:
+            score += 0.05
 
         return min(score, 1.0)
 
@@ -502,6 +518,17 @@ class MaternalRiskEngine:
             score += 0.30
         if inp.is_multiple_pregnancy:
             score += 0.25
+        # Paper: grand multiparity = independent preterm risk
+        if inp.parity >= 5:
+            score += 0.10
+        # Paper: no skilled birth attendant = major risk
+        if not inp.skilled_birth_attendant:
+            score += 0.15
+        # Paper: facility distance = referral delay risk
+        if inp.facility_distance_km > 10:
+            score += 0.08
+        elif inp.facility_distance_km > 5:
+            score += 0.04
 
         # Cervical / uterine
         conditions_str = " ".join(inp.pre_existing_conditions).lower()
@@ -617,7 +644,7 @@ class MaternalRiskEngine:
             return None, 0.0
 
     def _extract_features(self, inp: RiskInput) -> List[float]:
-        """Extract numerical feature vector from RiskInput."""
+        """Extract numerical feature vector from RiskInput (30 features)."""
         conditions_str = " ".join(inp.pre_existing_conditions).lower()
         symptoms_str = " ".join(inp.reported_symptoms).lower()
         return [
@@ -633,7 +660,12 @@ class MaternalRiskEngine:
             float(inp.previous_preeclampsia),
             float(inp.previous_gestational_diabetes),
             float(inp.previous_preterm_birth),
+            float(inp.previous_postpartum_hemorrhage),
             float(inp.is_multiple_pregnancy),
+            float(inp.parity),
+            float(inp.anc_visits),
+            float(inp.skilled_birth_attendant),
+            float(min(inp.facility_distance_km, 100.0)),
             float(inp.smoking),
             float(inp.alcohol_use),
             float(inp.stress_level),
@@ -642,10 +674,10 @@ class MaternalRiskEngine:
             float("hypertension" in conditions_str),
             float("malaria" in conditions_str),
             float("sickle_cell" in conditions_str),
+            float("hiv" in conditions_str),
             float("bleeding" in symptoms_str or "spotting" in symptoms_str),
             float("headache" in symptoms_str),
             float("vision_changes" in symptoms_str),
-            float("swelling" in symptoms_str),
         ]
 
     # ------------------------------------------------------------------
@@ -868,6 +900,21 @@ class MaternalRiskEngine:
             notes.append(
                 "Sickle cell disease prevalence is higher in African populations; "
                 "standard anemia thresholds may underestimate severity."
+            )
+        if inp.facility_distance_km > 10:
+            notes.append(
+                "Distance to facility >10km identified as a top maternal mortality predictor "
+                "in sub-Saharan Africa (BMC Research Notes, 2025). Referral planning is critical."
+            )
+        if not inp.skilled_birth_attendant:
+            notes.append(
+                "Absence of skilled birth attendant is a leading preventable cause of "
+                "maternal mortality in Africa. Facility delivery is strongly recommended."
+            )
+        if inp.anc_visits < 4:
+            notes.append(
+                "Fewer than 4 ANC visits is associated with significantly higher maternal "
+                "and neonatal mortality risk (WHO recommendation: minimum 8 visits)."
             )
         return notes
 
