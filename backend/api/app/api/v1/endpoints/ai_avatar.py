@@ -12,7 +12,7 @@ router = APIRouter()
 try:
     from app.conversation_ai import ConversationalAI
     from app.emotion_detector import EmotionDetector, EmotionInput
-    _ai = ConversationalAI(mistral_api_key=settings.MISTRAL_API_KEY)
+    _ai = ConversationalAI()
     _AI_AVAILABLE = True
 except ImportError:
     _ai = None
