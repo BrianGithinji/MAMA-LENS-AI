@@ -37,6 +37,12 @@ ai/*/models/*.joblib
 ai/*/models/*.pkl
 ai/*/models/*.h5
 
+# ─── Fine-tuned model weights (too large for git) ────────────
+ai/mama_model/mama-flan-t5/
+
+# ─── Training logs ───────────────────────────────────────────
+backend/api/dl_out.txt
+
 # ─── OS ──────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db

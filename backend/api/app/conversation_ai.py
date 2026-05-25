@@ -550,15 +550,17 @@ class ConversationalAI:
     """
     Multilingual conversational AI for maternal health support.
 
-    Integrates Mistral AI for natural language responses with rule-based
-    intent classification, emergency detection, and education delivery.
+    Primary engine: fine-tuned google/flan-t5-base (local, offline-capable, Africa-first).
+    Fallback: rule-based responses when model is unavailable.
+    Languages: English, Swahili, Maasai (maa), Luo (luo), Kikuyu (kik), French, Arabic.
     """
 
-    def __init__(self, mistral_api_key: Optional[str] = None) -> None:
-        self.api_key = (mistral_api_key or os.getenv("MISTRAL_API_KEY", "")).strip()
+    def __init__(self) -> None:
         self._intent_patterns = self._compile_intent_patterns()
         self._emergency_patterns = self._compile_emergency_patterns()
         self._sessions: Dict[str, ConversationContext] = {}
+        self._local_model_checked = False
+        self._local_model_available = False
 
     # ------------------------------------------------------------------
     # Public API
@@ -792,6 +794,23 @@ class ConversationalAI:
     # Response generation
     # ------------------------------------------------------------------
 
+    def _check_local_model(self) -> bool:
+        """Check once whether the local flan-t5 inference module is available."""
+        if not self._local_model_checked:
+            try:
+                import sys
+                ai_path = os.path.normpath(
+                    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")
+                )
+                if ai_path not in sys.path:
+                    sys.path.insert(0, ai_path)
+                from inference import is_available  # type: ignore
+                self._local_model_available = is_available()
+            except Exception:
+                self._local_model_available = False
+            self._local_model_checked = True
+        return self._local_model_available
+
     def _generate_response(
         self,
         ctx: ConversationContext,
@@ -801,134 +820,95 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Generate response using Mistral AI or fallback to rule-based."""
-        # For indigenous languages: translate input to English, generate response, translate back
-        if language == "maa":
-            return self._maasai_response(ctx, user_message, intent, literacy_level, channel)
-        if language == "kik":
-            return self._kikuyu_response(ctx, user_message, intent, literacy_level, channel)
-        if language == "luo":
-            return self._luo_response(ctx, user_message, intent, literacy_level, channel)
-
-        if self.api_key:
+        """Generate response: local flan-t5 model → rule-based fallback."""
+        if self._check_local_model():
             try:
-                return self._mistral_response(ctx, user_message, intent, language, literacy_level, channel)
+                return self._local_model_response(
+                    ctx, user_message, language, literacy_level, channel
+                )
             except Exception as exc:
-                logger.warning("Mistral AI call failed: %s. Using fallback.", exc)
-
+                logger.warning("Local model failed: %s. Using rule-based fallback.", exc)
         return self._rule_based_response(intent, language, literacy_level), 0.70
 
-    def _maasai_response(
-        self,
-        ctx: ConversationContext,
-        user_message: str,
-        intent: Intent,
-        literacy_level: str,
-        channel: str,
-    ) -> Tuple[str, float]:
-        """Send Maasai message directly to Mistral with a Maasai system prompt."""
-        if self.api_key:
-            try:
-                return self._mistral_response(
-                    ctx, user_message, intent, "maa", literacy_level, channel
-                )
-            except Exception as exc:
-                logger.warning("Maasai Mistral call failed: %s", exc)
-        return self._rule_based_response(intent, "maa", literacy_level), 0.70
+    # Translation pipeline for low-resource languages
+    _TRANSLATE_LANGS = {"maa", "luo", "kik"}
 
-    def _luo_response(
-        self,
-        ctx: ConversationContext,
-        user_message: str,
-        intent: Intent,
-        literacy_level: str,
-        channel: str,
-    ) -> Tuple[str, float]:
-        """Send Luo message directly to Mistral with a Luo system prompt."""
-        if self.api_key:
-            try:
-                return self._mistral_response(
-                    ctx, user_message, intent, "luo", literacy_level, channel
-                )
-            except Exception as exc:
-                logger.warning("Luo Mistral call failed: %s", exc)
-        return self._rule_based_response(intent, "luo", literacy_level), 0.70
+    def _translate_to_english(self, text: str, language: str) -> str:
+        """Translate low-resource language input to English."""
+        try:
+            if language == "maa":
+                from maasai_translator import maasai_to_english
+                return maasai_to_english(text)
+            elif language == "luo":
+                from luo_translator import luo_to_english
+                return luo_to_english(text)
+            elif language == "kik":
+                from kikuyu_translator import kikuyu_to_english
+                return kikuyu_to_english(text)
+        except Exception as e:
+            logger.warning("Translation to English failed (%s): %s", language, e)
+        return text
 
-    def _kikuyu_response(
-        self,
-        ctx: ConversationContext,
-        user_message: str,
-        intent: Intent,
-        literacy_level: str,
-        channel: str,
-    ) -> Tuple[str, float]:
-        """Send Kikuyu message directly to Mistral with a Kikuyu system prompt."""
-        if self.api_key:
-            try:
-                return self._mistral_response(
-                    ctx, user_message, intent, "kik", literacy_level, channel
-                )
-            except Exception as exc:
-                logger.warning("Kikuyu Mistral call failed: %s", exc)
-        return self._rule_based_response(intent, "kik", literacy_level), 0.70
+    def _translate_from_english(self, text: str, language: str) -> str:
+        """Translate English model response back to target language."""
+        try:
+            if language == "maa":
+                from maasai_translator import english_to_maasai
+                return english_to_maasai(text)
+            elif language == "luo":
+                from luo_translator import english_to_luo
+                return english_to_luo(text)
+            elif language == "kik":
+                from kikuyu_translator import english_to_kikuyu
+                return english_to_kikuyu(text)
+        except Exception as e:
+            logger.warning("Translation from English failed (%s): %s", language, e)
+        return text
 
-    def _mistral_response(
+    def _local_model_response(
         self,
         ctx: ConversationContext,
         user_message: str,
-        intent: Intent,
         language: str,
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Call Mistral AI API for response generation."""
-        try:
-            from mistralai.client.sdk import Mistral  # type: ignore
+        """Call the fine-tuned flan-t5 model with translation pipeline for low-resource languages."""
+        import sys
+        ai_path = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")
+        )
+        if ai_path not in sys.path:
+            sys.path.insert(0, ai_path)
+        from inference import generate  # type: ignore
 
-            client = Mistral(api_key=self.api_key)
+        # For low-resource languages: translate input → English, run model, translate back
+        inference_lang = language
+        query = user_message
+        if language in self._TRANSLATE_LANGS:
+            query = self._translate_to_english(user_message, language)
+            inference_lang = "en"
+            logger.info("Translated %s→en: %s", language, query)
 
-            system_prompt = SYSTEM_PROMPTS.get(language, SYSTEM_PROMPTS["en"])
+        parts = [query]
+        if ctx.gestational_age_weeks:
+            parts.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
+        if inference_lang == "sw":
+            parts.append("(Respond in Swahili)")
+        if literacy_level == "low":
+            parts.append("(Use very simple language)")
+        if channel in ("sms", "ussd"):
+            parts.append("(Keep response under 160 characters)")
 
-            context_additions = []
-            if ctx.gestational_age_weeks:
-                context_additions.append(
-                    f"The user is {ctx.gestational_age_weeks} weeks pregnant."
-                )
-            if literacy_level == "low":
-                context_additions.append(
-                    "Use very simple language. Short sentences. Avoid medical jargon."
-                )
-            if channel in ("sms", "ussd"):
-                context_additions.append(
-                    "Keep your response under 160 characters for SMS compatibility."
-                )
-            if ctx.risk_level in ("high", "emergency"):
-                context_additions.append(
-                    f"This user has been assessed as {ctx.risk_level} risk. Be extra attentive."
-                )
+        max_tokens = 100 if channel in ("sms", "ussd") else 300
+        response = generate(" ".join(parts), max_new_tokens=max_tokens)
 
-            if context_additions:
-                system_prompt += "\n\nContext: " + " ".join(context_additions)
+        # Translate response back to target language
+        if language in self._TRANSLATE_LANGS:
+            response = self._translate_from_english(response, language)
+            logger.info("Translated en→%s response", language)
 
-            messages = [{"role": "system", "content": system_prompt}]
-            messages.extend(ctx.get_recent_messages(8))
-
-            response = client.chat.complete(
-                model=os.getenv("MISTRAL_MODEL", "mistral-large-latest"),
-                messages=messages,
-                max_tokens=500 if channel not in ("sms", "ussd") else 100,
-                temperature=0.7,
-            )
-
-            text = response.choices[0].message.content or ""
-            return text.strip(), 0.92
-
-        except ImportError:
-            logger.warning("mistralai package not installed.")
-            raise
-        except Exception as exc:
-            logger.error("Mistral AI error: %s", exc)
-            raise
+        return response, 0.85
 
     def _rule_based_response(
         self, intent: Intent, language: str, literacy_level: str
@@ -1216,9 +1196,9 @@ class ConversationalAI:
 # Convenience function
 # ---------------------------------------------------------------------------
 
-def create_conversation_ai(api_key: Optional[str] = None) -> ConversationalAI:
-    """Create a ConversationalAI instance."""
-    return ConversationalAI(mistral_api_key=api_key)
+def create_conversation_ai() -> ConversationalAI:
+    """Create a ConversationalAI instance backed by the local flan-t5 model."""
+    return ConversationalAI()
 
 
 # ---------------------------------------------------------------------------
@@ -1227,7 +1207,7 @@ def create_conversation_ai(api_key: Optional[str] = None) -> ConversationalAI:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    ai = ConversationalAI(mistral_api_key=os.getenv("MISTRAL_API_KEY"))
+    ai = ConversationalAI()
 
     test_messages = [
         ("Hello, I am 28 weeks pregnant", "en", "app"),

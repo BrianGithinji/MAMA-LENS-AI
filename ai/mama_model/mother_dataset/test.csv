@@ -1,0 +1,514 @@
+{
+    "published": "20 Apr, 2023",
+    "references": "",
+    "name": "HIDA: Maternal Healthcare QA",
+    "qa": [
+        {
+            "q": "Why do I feel tired and weak",
+            "id": 45,
+            "aq": [],
+            "a": "Having lower red blood cells than normal. It is also called being anemic. Treating the underlying cause of the anemia will help restore healthy red blood cells. This is done by taking iron and folic supplements"
+        },
+        {
+            "q": "Why do I feel pain or burning when I use the bathroom?",
+            "id": 46,
+            "aq": [],
+            "a": "When a woman becomes pregnant, their immune system goes down, so they become susceptible to infections such as a UTI. A UTI is a bacterial infection in the urinary tract."
+        },
+        {
+            "q": "Why do I feel fever, tiredness, or shakiness?",
+            "id": 47,
+            "aq": [],
+            "a": "It is important to see your health care provider if you think you have a UTI or any fever."
+        },
+        {
+            "q": "Why do I have a low or sad mood?",
+            "id": 48,
+            "aq": [],
+            "a": "Some women experience depression during or after pregnancy. When many of these symptoms occur together and last for more than a week or two at a time, this is probably depression. It is important that the mother visits a health care provider."
+        },
+        {
+            "q": "Why is my blood pressure high?",
+            "id": 49,
+            "aq": [],
+            "a": "High blood pressure during pregnancy could be caused by being overweight or obese, not getting enough physical activity, smoking, drinking alcohol, first-time pregnancy, a family history of pregnancy-related hypertension, carrying more than one child, age (over 35), assistive reproductive technology (such as in vitro fertilization, or IVF) and having diabetes or certain autoimmune diseases."
+        },
+        {
+            "q": "Why are my glucose levels high?",
+            "id": 50,
+            "aq": [],
+            "a": "Gestational diabetes is diabetes diagnosed for the first-time during pregnancy. Gestational diabetes causes high blood sugar that can affect your pregnancy and your baby's health. Some of the risk factors that cause of gestational diabetes are: being overweight or obese, not being physically active, having prediabetes, having had gestational diabetes during a previous pregnancy, having polycystic ovary syndrome, having an immediate family member with diabetes and having previously delivered a baby weighing more than 9 pounds (4.1 kilograms)."
+        },
+        {
+            "q": "What is preeclampsia?",
+            "id": 51,
+            "aq": [],
+            "a": "Preeclampsia is a serious medical condition that can lead to preterm delivery and death. Its cause is unknown, but some women are at an increased risk. Risk factors include; first pregnancies; preeclampsia in a previous pregnancy; existing conditions such as high blood pressure, diabetes, kidney disease, and so many others; being 35 years of age or older, carrying two or more fetuses; obesity"
+        },
+        {
+            "q": "Why do I have labor pains before my due date?",
+            "id": 52,
+            "aq": [],
+            "a": "Not all contractions mean you’re in labor. You may have contractions on and off before true labor starts. These are called false labor pains or Braxton-Hicks contractions. They soften and thin the cervix to help your body get ready for labor and birth. You may feel them in the weeks right before your due date. Learning the differences between true labor contractions and false labor contractions can help you know when you’re really in labor."
+        },
+        {
+            "q": "Why do I vomit too much?",
+            "id": 53,
+            "aq": [],
+            "a": "Many women have some nausea or vomiting, or “morning sickness,” particularly during the first 3 months of pregnancy. The cause of nausea and vomiting during pregnancy is believed to be rapidly rising blood levels of a hormone called HCG - Human Chorionic Gonadotropin. However, this condition, also known as hyperemesis gravidarum, is more extreme than “morning sickness”, and can lead to weight loss and dehydration and may require intensive treatment."
+        },
+        {
+            "q": "Why do I have swollen feet?",
+            "id": 54,
+            "aq": [],
+            "a": "\"It's normal to get some swelling in pregnancy, particularly in your legs, ankles, feet, and fingers. It's often worse at the end of the day and further into your pregnancy.\r\n\r\nSwelling that comes on gradually is not usually harmful to you or your baby, but it can be uncomfortable.\r\n\r\nA sudden increase in swelling can be a sign of pre-eclampsia, a condition that needs to be monitored as soon as possible. Some of the symptoms are; a sudden increase in swelling in your face, hands, or feet; a very bad headache; problems with your vision, such as blurring or flashing lights in your eyes; severe pain just below your ribs; vomiting with any of the above symptoms.\""
+        },
+        {
+            "q": "What complications will I get when being obese during pregnancy?",
+            "id": 55,
+            "aq": [],
+            "a": "The heavier a woman is before she becomes pregnant, the greater her risk of pregnancy complications, including preeclampsia, Gestation Diabetes Mellitus, stillbirth, and cesarean delivery. Overweight and obese women who lose weight before pregnancy are likely to have healthier pregnancies."
+        },
+        {
+            "q": "Can Malaria lead to a miscarriage?",
+            "id": 56,
+            "aq": [],
+            "a": "Malaria, a parasitic infection transmitted by mosquitoes, is one of the most devastating infectious diseases, killing more than 1 million people annually. Pregnant women, children, and immunocompromised individuals have the highest morbidity and mortality. Pregnant women infected with malaria usually have more severe symptoms and outcomes, with higher rates of miscarriage, intrauterine demise, premature delivery, low-birth-weight neonates, and neonatal death. They are also at a higher risk for severe anemia and maternal death. Malaria can be prevented with appropriate drugs, bed nets treated with insecticide, and effective educational outreach programs."
+        },
+        {
+            "q": "Why do I have back pain?",
+            "id": 57,
+            "aq": [],
+            "a": "It is very common to get backache or back pain during pregnancy, especially in the early stages. During pregnancy, the ligaments in your body naturally become softer and stretch to prepare you for labor. This can put a strain on the joints of your lower body. To ease back pain; bend your knees and keep your back straight when you lift or pick something up from the floor; avoid lifting heavy objects; move your feet when you turn to avoid twisting your spine; wear flat shoes to evenly distribute your weight; try to balance the weight between 2 bags when carrying shopping; keep your back straight and well-supported when sitting; look for maternity support pillows; get enough rest, particularly later in pregnancy; have a massage or a warm bath and use a mattress that supports you properly."
+        },
+        {
+            "q": "Why do I have sharp pains in the stomach?",
+            "id": 58,
+            "aq": [],
+            "a": "\"Round ligament pain is one of the most common pregnancy discomforts. \r\nThe round ligaments are two ropelike cords of connective tissues that support the uterus on each side.\r\n\r\nThese ligaments connect the uterus to the groin and pubic region. As the uterus grows during pregnancy, the round ligaments can stretch.\r\n\r\nWhen a pregnant woman moves, it can cause the round ligaments to spasm painfully.\""
+        },
+        {
+            "q": "Bleeding while pregnant",
+            "id": 59,
+            "aq": [],
+            "a": "\"In early pregnancy, you might get some harmless light bleeding, called \"\"spotting\"\". \r\nThis is when the developing embryo plants itself in the wall of your womb. \r\nThis type of bleeding often happens around the time your period would have been due.\r\n\r\nAlso, pregnancy can cause changes to the cervix, \r\nand this may sometimes cause bleeding – after sex, for example.\r\n\r\nAnd then, during the first 12 weeks of pregnancy, \r\nvaginal bleeding can be a sign of miscarriage or ectopic pregnancy. \r\nIf a pregnancy ends before the 24th week, it's called a miscarriage. \r\nAnd an ectopic pregnancy is when a fertilized egg implants outside the womb for example,\r\n in the fallopian tube.\""
+        },
+        {
+            "q": "Are hot sweats normal during pregnancy?",
+            "id": 60,
+            "aq": [],
+            "a": "During pregnancy, your body temperature will rise slightly which is completely normal. And as sweating is the natural way of trying to cool down and regulate your body temperature to prevent overheating."
+        },
+        {
+            "q": "How do I know that I am in labor?",
+            "id": 61,
+            "aq": [],
+            "a": "\"Know the signs\r\n\r\nThere are several signs that labor might be starting, including; contractions or tightening; a \"\"show\"\", is when the plug of mucus from your cervix (entrance to your womb, or uterus) comes away. There can also be Backache, an urge to go to the toilet - which is caused by your baby's head pressing on your bowel, your waters breaking. Overall, know that the early, latent, stage of labor can take some time.\""
+        },
+        {
+            "q": "How do I know that it is an ectopic pregnancy?",
+            "id": 62,
+            "aq": [],
+            "a": "\"An ectopic pregnancy is when a fertilized egg implants itself outside of the womb, usually in one of the fallopian tubes. The fallopian tubes are the tubes connecting the ovaries to the womb. If an egg gets stuck in them, it won't develop into a baby and your health may be at risk if the pregnancy continues. Unfortunately, it's not possible to save the pregnancy. It usually has to be removed using medicine or an operation.\r\nSymptoms of an ectopic pregnancy might include; a missed period and other signs of pregnancy; tummy pain on one side in the lower abdomen; virginal bleeding or a brown watery discharge; pain in the tip of your shoulder or discomfort when peeing or pooing.\""
+        },
+        {
+            "q": "What is oligohydramnios?",
+            "id": 63,
+            "aq": [],
+            "a": "\"Oligohydramnios occurs during pregnancy when your amniotic fluid is lower than expected for your baby’s gestational age. Amniotic fluid is a water-like fluid that surrounds your baby in your uterus. Too little amniotic fluid can cause health problems in your baby or be a sign of an underlying condition. These conditions could affect your baby’s development or cause complications during labor and delivery. People who are past their due date normally face this condition because amniotic fluid levels decrease after 40 weeks of pregnancy.\r\nYou may not know you have low amniotic fluid. However, your healthcare provider may suspect it if; you’re leaking fluid from your vagina; your uterus measures small; you don’t feel your baby move enough; you’re not gaining enough weight; you’re also at an increased risk for low amniotic fluid if you’ve had low amniotic fluid in prior pregnancies.\""
+        },
+        {
+            "q": "Miscarriage or fetal loss",
+            "id": 64,
+            "aq": [],
+            "a": "\"A miscarriage is a pregnancy loss that happens up to 20 weeks of gestation. Most miscarriages happen before 12 weeks. Miscarriages are usually preceded by spotting and intense cramping. To confirm a miscarriage, an ultrasound and blood tests may be done. The fetus and contents of the uterus are often naturally expelled. If this does not happen, a procedure called a dilation and curettage may be necessary.\r\nFetal loss in the second trimester may happen if the cervix is weak and opens too early. This is called an incompetent cervix. In some cases of an incompetent cervix, a healthcare provider can help prevent pregnancy loss by stitching the cervix closed until delivery.\""
+        },
+        {
+            "q": "Placental complications",
+            "id": 65,
+            "aq": [],
+            "a": "\"Under normal circumstances, the placenta attaches to the uterine wall. However, two types of placental complications may happen, including: Placental abruption. Sometimes the placenta becomes detached from the uterine wall too soon. This is called placental abruption and leads to bleeding and less oxygen and nutrients to the fetus. The detachment may be complete or partial. The cause of placental abruption is often unknown.\r\nPlacenta previa. Normally, the placenta is located in the upper part of the uterus. Placenta previa is a condition in which the placenta is attached close to or covering the cervix (the opening into the uterus).\r\nSymptoms may include vaginal bleeding that is bright red and not associated with belly tenderness or pain. Diagnosis is confirmed by doing a physical exam and an ultrasound. Depending on how bad the problem is and the stage of pregnancy, a change in activities or bed rest may be ordered.\""
+        },
+        {
+            "q": "Bleeding in late pregnancy",
+            "id": 66,
+            "aq": [],
+            "a": "Bleeding in late pregnancy may be a sign of placental complications, a vaginal or cervical infection, or preterm labor. Women who bleed in late pregnancy may be at greater risk of losing the fetus and bleeding excessively. Bleeding at any time during the pregnancy should be reported to your healthcare provider right away."
+        },
+        {
+            "q": "Do I need supplements during pregnancy?",
+            "id": 67,
+            "aq": [],
+            "a": "Yes, you shall need some supplements, especially prenatal vitamins which can help prevent birth defects. They also help your baby grow healthy and strong and may help you with morning sickness. You’ll want to make sure your prenatal vitamin has folic acid, iron and calcium in it. If you need help getting prenatal vitamins, ask your doctor or healthcare provider for safe recommendations."
+        },
+        {
+            "q": "Do I need to avoid anything during pregnancy?",
+            "id": 68,
+            "aq": [],
+            "a": "Yes, it is important to avoid using alcohol, drugs and cigarettes during pregnancy."
+        },
+        {
+            "q": "How to deal with morning sickness?",
+            "id": 69,
+            "aq": [],
+            "a": "Morning sickness can be hard on you and should be taken seriously. Make sure you drink plenty of water and eat small meals often. Foods like rice, bananas and cereal may be easier on your stomach. Stay away from spicy or fatty foods."
+        },
+        {
+            "q": "Should I walk more?",
+            "id": 70,
+            "aq": [],
+            "a": "Exercise is always important, but especially during pregnancy. Regular, daily walks are an easy way to keep moving. It’s likely you will feel tired as you get later in your pregnancy. Always listen to your body and talk to your doctor or nurse in case of anything strange."
+        },
+        {
+            "q": "How to manage stress?",
+            "id": 71,
+            "aq": [],
+            "a": "Practice deep breathing for relaxation, Take regular rests or breaks between chores, do exercises and eat right. Also, talking to your prenatal and postnatal care provider is much stress relieving."
+        },
+        {
+            "q": "What fashion choices are recommended during pregnancy?",
+            "id": 72,
+            "aq": [],
+            "a": "Get comfortable dressing that doesn't limit free body movements, and also get yourself some comfortable shoes."
+        },
+        {
+            "q": "Should I drink any coffee or tea?",
+            "id": 73,
+            "aq": [],
+            "a": "It is much recommended to limit use of caffeine heavy drinks such as coffee and many kinds of processed teas. Also, beware of some soft-drinks that have caffeine additives."
+        },
+        {
+            "q": "It is okay to drink alcohol?",
+            "id": 74,
+            "aq": [],
+            "a": "Not really. Avoid alcohol all-together during pregnancy, especially strong spirits such as whiskey, and such dangerous activities as binge-drinking. Even beers aren't that safe."
+        },
+        {
+            "q": "What medications or medicines should be avoided?",
+            "id": 75,
+            "aq": [],
+            "a": "Generally, avoid over-the-counter medications during pregnancy, except when they have been recommended or prescribed by your doctor."
+        },
+        {
+            "q": "What foods are most recommended during pregnancy?",
+            "id": 76,
+            "aq": [],
+            "a": "Basically, eat healthy, balanced diet meals. It is also advised to avoid overeating. It is safer to eat multiple light meals during the day than trying to eat few or a single huge meal per day."
+        },
+        {
+            "q": "Which herbs should be avoided during pregnancy?",
+            "id": 77,
+            "aq": [],
+            "a": "Like medications, generally avoid unprescribed herbs. For example, it is generally advised to avoid herbs such as Licorice, but also aloe, barberry, black cohosh, blue cohosh, dong quai, feverfew, goldenseal, juniper, wild yam and motherwort."
+        },
+        {
+            "q": "What is prenatal care?",
+            "id": 78,
+            "aq": [],
+            "a": "Prenatal care, also known as antenatal care, is the health care you get while you are pregnant."
+        },
+        {
+            "q": "What is antenatal care?",
+            "id": 79,
+            "aq": [],
+            "a": "Prenatal care, also known as antenatal care, is the health care you get while you are pregnant."
+        },
+        {
+            "q": "When should I go for prenatal care?",
+            "id": 80,
+            "aq": [],
+            "a": "You should start your antenatal care as soon as possible once you know you're pregnant."
+        },
+        {
+            "q": "What happens during prenatal care checks?",
+            "id": 81,
+            "aq": [],
+            "a": "The midwife or doctor providing your antenatal care will: check the health of you and your baby, give you useful information to help you have a healthy pregnancy, including advice about healthy eating and exercise, discuss your options and choices for your care during pregnancy, labor and birth."
+        },
+        {
+            "q": "Do I need supplements during pregnancy?",
+            "id": 82,
+            "aq": [],
+            "a": "Yes, you shall need some supplements, especially prenatal vitamins which can help prevent birth defects. They also help your baby grow healthy and strong and may help you with morning sickness. You’ll want to make sure your prenatal vitamin has folic acid, iron and calcium in it. If you need help getting prenatal vitamins, ask your doctor or healthcare provider for safe recommendations."
+        },
+        {
+            "q": "What should I avoid during pregnancy?",
+            "id": 83,
+            "aq": [],
+            "a": "Yes, it is important to avoid using alcohol, drugs and cigarettes during pregnancy."
+        },
+        {
+            "q": "Am having morning sickness, what should I do?",
+            "id": 84,
+            "aq": [],
+            "a": "Morning sickness can be hard on you and should be taken seriously. Make sure you drink plenty of water and eat small meals often. Foods like rice, bananas and cereal may be easier on your stomach. Stay away from spicy or fatty foods."
+        },
+        {
+            "q": "How much walking is enough during pregnancy?",
+            "id": 85,
+            "aq": [],
+            "a": "Exercise is always important, but especially during pregnancy. Regular, daily walks are an easy way to keep moving. It’s likely you will feel tired as you get later in your pregnancy. Always listen to your body and talk to your doctor or nurse in case of anything strange."
+        },
+        {
+            "q": "How might I deal with stress?",
+            "id": 86,
+            "aq": [],
+            "a": "Practice deep breathing for relaxation, Take regular rests or breaks between chores, do exercises and eat right. Also, talking to your prenatal and postnatal care provider is much stress relieving."
+        },
+        {
+            "q": "Any advise concerning what to wear?",
+            "id": 87,
+            "aq": [],
+            "a": "Get comfortable dressing that doesn't limit free body movements, and also get yourself some comfortable shoes."
+        },
+        {
+            "q": "Is it safe to drink coffee or tea?",
+            "id": 88,
+            "aq": [],
+            "a": "It is much recommended to limit use of caffeine heavy drinks such as coffee and many kinds of processed teas. Also, beware of some soft-drinks that have caffeine additives."
+        },
+        {
+            "q": "Should I not drink beer or wine during pregnancy?",
+            "id": 89,
+            "aq": [],
+            "a": "Not really. Avoid alcohol all-together during pregnancy, especially strong spirits such as whiskey, and such dangerous activities as binge-drinking. Even beers aren't that safe."
+        },
+        {
+            "q": "Any dangerous or risky medications to be aware of?",
+            "id": 90,
+            "aq": [],
+            "a": "Generally, avoid over-the-counter medications during pregnancy, except when they have been recommended or prescribed by your doctor."
+        },
+        {
+            "q": "What dietary recommendations for pregnancy?",
+            "id": 91,
+            "aq": [],
+            "a": "Basically, eat healthy, balanced diet meals. It is also advised to avoid overeating. It is safer to eat multiple light meals during the day than trying to eat few or a single huge meal per day."
+        },
+        {
+            "q": "What herbs should be avoided?",
+            "id": 92,
+            "aq": [],
+            "a": "Like medications, generally avoid unprescribed herbs. For example, it is generally advised to avoid herbs such as Licorice, but also aloe, barberry, black cohosh, blue cohosh, dong quai, feverfew, goldenseal, juniper, wild yam and motherwort."
+        },
+        {
+            "q": "Which supplements might one need during pregnancy?",
+            "id": 93,
+            "aq": [],
+            "a": "Yes, you shall need some supplements, especially prenatal vitamins which can help prevent birth defects. They also help your baby grow healthy and strong and may help you with morning sickness. You’ll want to make sure your prenatal vitamin has folic acid, iron and calcium in it. If you need help getting prenatal vitamins, ask your doctor or healthcare provider for safe recommendations."
+        },
+        {
+            "q": "When should I go for prenatal care?",
+            "id": 94,
+            "aq": [],
+            "a": "You should start your antenatal care as soon as possible once you know you're pregnant."
+        },
+        {
+            "q": "Is it okay to have sex while pregnant?",
+            "id": 95,
+            "aq": [],
+            "a": "Yes, it is okay but not in the first trimester. In the first 12weeks of pregnancy, the pregnancy is very fragile and we want to reduce the risk of infections and the risk of vigorous sex causing a miscarriage."
+        },
+        {
+            "q": "What do I do if my feet swell?",
+            "id": 96,
+            "aq": [],
+            "a": "You'll need to get your blood pressure checked. If all is well, elevate your legs on a pillow or two for 10-20 minutes about twice a day."
+        },
+        {
+            "q": "What do I do if my back aches?",
+            "id": 97,
+            "aq": [],
+            "a": "If the back aches towards the third trimester, its most probably because the baby has grown bigger and obviously heavier. You need only a few pain killers. But regardless of the trimester, you need to get your urine checked for urinary tract infections."
+        },
+        {
+            "q": "What do I do for headache around my forehead?",
+            "id": 98,
+            "aq": [],
+            "a": "It is most probably because you have a high blood pressure. Get it checked and handled medically right away."
+        },
+        {
+            "q": "Is it okay if my contractions came early?",
+            "id": 99,
+            "aq": [],
+            "a": "It is not okay but very common. Can be cause by UTI's, malaria, high blood pressure or any other illness. You need to get checked and treated for you might get a miscarriage."
+        },
+        {
+            "q": "I have had many miscarriages after my first child. What do I do?",
+            "id": 100,
+            "aq": [],
+            "a": "Its not okay. there's most probably incompatibility between your blood with that of your baby. Go to a health facility with your partner and get your blood group and rhesus factor checked. You might need anti D injections if your rhesus factor is negative. Also, sometimes your cervix is not closed well so you cannot carry your baby as it grows. you'll need a few stiches in your cervix so your womb can carry your baby until time of delivery."
+        },
+        {
+            "q": "How many TT injections should I get on a single pregnancy?",
+            "id": 101,
+            "aq": [],
+            "a": "5 injections. TT1 is got at your first antenatal visit, TT2, one month after TT1, TT3, six months after TT2, TT4, one year after TT3, TT5, one year after TT4."
+        },
+        {
+            "q": "Do I have to get TT injections on every pregnancy?",
+            "id": 102,
+            "aq": [],
+            "a": "If you had all the five doses on your former pregnancy, you do not need more injections on the next pregnancies. But if the duration between both pregnancies is above 2years. You'll need to get a booster dose."
+        },
+        {
+            "q": "Milk-like liquid comes out of my breasts. Is it healthy?",
+            "id": 103,
+            "aq": [],
+            "a": "It is not life-threatening to have a milk-like discharge come out of your breasts. It is okay and very much expected. You just need to have proper hygiene."
+        },
+        {
+            "q": "When is it necessary to start doing antenatal?",
+            "id": 104,
+            "aq": [],
+            "a": "As soon as you know you're pregnant, you are highly advised to start your antenatal visits."
+        },
+        {
+            "q": "Why do I vomit so much? is it normal?",
+            "id": 105,
+            "aq": [],
+            "a": "Vomiting during pregnancy is normal but it is not normal if it becomes too much. If you have done blood tests at the health facility and they aren't suggestive of an illness, you need anti-emetics and to eat dry non oily snacks."
+        },
+        {
+            "q": "How do I know labor has started?",
+            "id": 106,
+            "aq": [],
+            "a": "In addition to the labor pains, a mucoid bloody fluid comes out of the vagina. With those signs, labor has started."
+        },
+        {
+            "q": "After how long after delivery can I have a birth control method?",
+            "id": 107,
+            "aq": [],
+            "a": "Two weeks after a normal child birth, you can have a birth control method."
+        },
+        {
+            "q": "How long does it take to get pregnant again after a C-section?",
+            "id": 108,
+            "aq": [],
+            "a": "Two years is the recommended time to conceive again after a C-section birth."
+        },
+        {
+            "q": "What do I do if I miss an immunization appointment?",
+            "id": 109,
+            "aq": [],
+            "a": "As soon as you remember, take your child for the immunization."
+        },
+        {
+            "q": "What do I do if I missed to take my contraceptive pill?",
+            "id": 110,
+            "aq": [],
+            "a": "Take the pill as soon as you remember and then continue with the rest as directed to you."
+        },
+        {
+            "q": "How do I control over bleeding after an implant?",
+            "id": 111,
+            "aq": [],
+            "a": "You need to go to a health facility and get it handled medically. You do not have to get the implant removed unless advised by the medical personnel."
+        },
+        {
+            "q": "After how long can I have sexual intercourse after a vaginal stich on delivery?",
+            "id": 112,
+            "aq": [],
+            "a": "40 to 60days is good time for healing of the stitched area, thereafter, you can have sexual intercourse again."
+        },
+        {
+            "q": "How do I recover a tight vagina after child birth?",
+            "id": 113,
+            "aq": [],
+            "a": "Pelvic exercises are known to help in recovery of a tight vagina and tones pelvic muscles."
+        },
+        {
+            "q": "After how long can I move after a C-section?",
+            "id": 114,
+            "aq": [],
+            "a": "24 hours after a C-section you're expected to be able walk around the ward."
+        },
+        {
+            "q": "Can I wash my C-section wound with salt water?",
+            "id": 115,
+            "aq": [],
+            "a": "It is not advisable to wash that area with salt water."
+        },
+        {
+            "q": "My baby cries too much at night. What do I do?",
+            "id": 116,
+            "aq": [],
+            "a": "It is probably because of colic pain. Get the baby Gripe water and administer as prescribed."
+        },
+        {
+            "q": "Can I have a vaginal delivery even if I've had a C-section before?",
+            "id": 117,
+            "aq": [],
+            "a": "It is possible depending on the reason for your former C-section."
+        },
+        {
+            "q": "What is the importance of walking when I am in labor?",
+            "id": 118,
+            "aq": [],
+            "a": "Walking is a form of exercise which eases the intensity of labor and helps with a steady labor progress."
+        },
+        {
+            "q": "Why do I have to drink tea while in labor?",
+            "id": 119,
+            "aq": [],
+            "a": "To keep you hydrated and helps with steady uterine contractions which is good for labor progress."
+        },
+        {
+            "q": "How many antenatal visits am I supposed to attend on a single pregnancy?",
+            "id": 120,
+            "aq": [],
+            "a": "Above 4 visits. It is very much advisable to have an antenatal visit every month which totals up to 8 visits."
+        },
+        {
+            "q": "Is it true that a UDI cause UTI's?",
+            "id": 121,
+            "aq": [],
+            "a": "IUD's do not cause UTI's but do call for a very high level of hygiene such that you do not attract infections'"
+        },
+        {
+            "q": "Is it true that the implant moves up to the heart?",
+            "id": 122,
+            "aq": [],
+            "a": "That is not true. The implant is inserted right under the skin in the arm and there's no way it can move to the heart."
+        },
+        {
+            "q": "Will my unborn baby contract HIV since I am HIV positive?",
+            "id": 123,
+            "aq": [],
+            "a": "There's a risk to infect the baby but the risk is very much reduced if you take your ARV's well."
+        },
+        {
+            "q": "Whats the recommended time to do the first ultrasound scan?",
+            "id": 124,
+            "aq": [],
+            "a": "In the first 3 months of pregnancy, it is advisable to do the first ultrasound scan."
+        },
+        {
+            "q": "Won’t rays of ultrasound scan affect my baby?",
+            "id": 125,
+            "aq": [],
+            "a": "Ultrasound scan rays are not dangerous to the unborn baby so they're very safe."
+        },
+        {
+            "q": "Won't rays of Xray affect the baby in the womb?",
+            "id": 126,
+            "aq": [],
+            "a": "Exposure to a high dose of these radiations is not safe for the baby."
+        },
+        {
+            "q": "Is it normal to bleed while pregnant?",
+            "id": 127,
+            "aq": [],
+            "a": "It is not normal. It is a cardinal sign for a miscarriage. It is an emergency so you need to visit the health facility as soon as possible."
+        },
+        {
+            "q": "How many ultrasound scans can I do on a single pregnancy?",
+            "id": 128,
+            "aq": [],
+            "a": "One in the first trimester, one in the second trimester and one in the third trimester, making a total of three."
+        }
+    ],
+    "update_url": "https://qakbhs.chwezi.tech//api/qakb/6/",
+    "description": "This dataset contains the important information about the healthcare aspects of maternal health that one would need to reference in order to maintain and experience a successful pregnancy.",
+    "kind": "SERVICE"
+}

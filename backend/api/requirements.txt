@@ -22,12 +22,14 @@ pydantic-settings==2.9.1
 email-validator==2.1.1
 
 # ─── AI / ML ─────────────────────────────────────────────────────────────────
-mistralai==2.4.5
+# Local fine-tuned model: google/flan-t5-base (Africa-first, offline-capable)
+transformers==4.51.3
+torch==2.3.1
+sentencepiece==0.2.0
+accelerator>=0.30.0
+datasets>=2.19.0
 numpy==1.26.4
 scikit-learn==1.5.0
-transformers==4.51.3
-sentencepiece==0.2.0
-torch==2.3.1
 
 # ─── Utilities ───────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
