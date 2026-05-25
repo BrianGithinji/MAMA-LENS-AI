@@ -9,7 +9,7 @@ from app.conversation_ai import ConversationalAI
 from app.core.config import settings
 
 router = APIRouter()
-_ai = ConversationalAI(mistral_api_key=settings.MISTRAL_API_KEY)
+_ai = ConversationalAI()
 
 
 class ChatRequest(BaseModel):
