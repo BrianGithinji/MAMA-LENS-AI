@@ -55,6 +55,7 @@ async def send_chat_message(message: ChatRequest, current_user: dict = Depends(g
         literacy_level=message.literacy_level,
         gestational_age_weeks=message.gestational_age_weeks,
     )
+    detected_language = ai_response.language  # may differ from message.language
 
     # Persist MAMA's reply
     reply_id = str(uuid.uuid4())
@@ -81,6 +82,7 @@ async def send_chat_message(message: ChatRequest, current_user: dict = Depends(g
         "follow_up_questions": ai_response.follow_up_questions,
         "requires_human_handoff": ai_response.requires_human_handoff,
         "education_content": ai_response.education_content,
+        "language": detected_language,
     }
 
 

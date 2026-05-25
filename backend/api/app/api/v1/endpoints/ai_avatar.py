@@ -68,6 +68,7 @@ async def avatar_chat(
             intent = response.intent.value
             is_emergency = response.is_emergency
             suggested_actions = response.suggested_actions
+            request.language = response.language  # reflect auto-detected language
         except Exception as e:
             logger.error("AI chat error", error=str(e))
             raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
@@ -93,6 +94,7 @@ async def avatar_chat(
         "intent": intent,
         "is_emergency": is_emergency,
         "suggested_actions": suggested_actions,
+        "language": request.language,
     }
 
 

@@ -555,6 +555,39 @@ class ConversationalAI:
     Languages: English, Swahili, Maasai (maa), Luo (luo), Kikuyu (kik), French, Arabic.
     """
 
+    # Signature word lists for fast language detection (no external deps)
+    _LANG_SIGNATURES: Dict[str, List[str]] = {
+        "sw": ["habari", "ninajisikia", "ujauzito", "mtoto", "damu", "maumivu", "kliniki",
+               "nenda", "wiki", "chakula", "kula", "dalili", "degedege", "dharura",
+               "mkunga", "hospitali", "mimba", "kujifungua", "mikazo", "asante",
+               "tafadhali", "ninaumwa", "sijisikii", "ninahisi", "nitasaidia"],
+        "fr": ["bonjour", "grossesse", "bébé", "douleur", "saignement", "clinique",
+               "enceinte", "semaine", "manger", "symptôme", "urgence", "médecin",
+               "je", "vous", "nous", "est", "une", "les", "des", "que", "pour"],
+        "ar": ["حمل", "طفل", "ألم", "نزيف", "عيادة", "حامل", "أسبوع", "أكل",
+               "أعراض", "طوارئ", "طبيب", "مرحبا", "شكرا", "أنا", "هل"],
+        "luo": ["nyathi", "remo", "chandruok", "kony", "dhi", "ospetar", "kuon",
+                "rech", "goyo", "podho", "pi", "matek", "mathoth"],
+        "kik": ["mwana", "thakame", "kurwara", "ndiaga", "githeri", "mukimo",
+                "gutoka", "kugwa", "ndihia", "mwari", "ngai", "irio"],
+        "maa": ["enkare", "enkiama", "entomononi", "oltau", "aidim", "enkibolata",
+                "sopa", "nkare", "osupuko", "siani"],
+    }
+
+    def detect_language(self, text: str) -> Optional[str]:
+        """Detect language from text using signature word matching.
+        Returns language code or None if English / undetected."""
+        text_lower = text.lower()
+        scores: Dict[str, int] = {}
+        for lang, words in self._LANG_SIGNATURES.items():
+            score = sum(1 for w in words if w in text_lower)
+            if score > 0:
+                scores[lang] = score
+        if not scores:
+            return None  # assume English
+        best = max(scores, key=lambda k: scores[k])
+        return best if scores[best] >= 1 else None
+
     def __init__(self) -> None:
         self._intent_patterns = self._compile_intent_patterns()
         self._emergency_patterns = self._compile_emergency_patterns()
@@ -589,10 +622,19 @@ class ConversationalAI:
         Returns:
             ConversationResponse with message and metadata.
         """
+        # Auto-detect language from message — overrides settings if user switches language
+        detected = self.detect_language(user_message)
+        if detected and detected != language:
+            logger.info("Language auto-adjusted: %s -> %s", language, detected)
+            language = detected
+
         # Get or create session
         ctx = self._get_or_create_session(
             session_id, language, channel, literacy_level, gestational_age_weeks
         )
+
+        # Update session language if it changed
+        ctx.language = language
 
         # Add user message to history
         ctx.add_message("user", user_message)
@@ -650,7 +692,7 @@ class ConversationalAI:
             follow_up_questions=follow_up,
             requires_human_handoff=requires_handoff,
             confidence=confidence,
-            language=language,
+            language=language,  # reflects auto-detected language
         )
 
     def get_weekly_education(
