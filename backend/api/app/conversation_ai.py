@@ -831,7 +831,7 @@ class ConversationalAI:
         return self._rule_based_response(intent, language, literacy_level), 0.70
 
     # Translation pipeline for low-resource languages
-    _TRANSLATE_LANGS = {"maa", "luo", "kik"}
+    _TRANSLATE_LANGS = {"maa", "luo", "kik", "sw"}
 
     def _translate_to_english(self, text: str, language: str) -> str:
         """Translate low-resource language input to English."""
@@ -845,6 +845,9 @@ class ConversationalAI:
             elif language == "kik":
                 from kikuyu_translator import kikuyu_to_english
                 return kikuyu_to_english(text)
+            elif language == "sw":
+                from swahili_translator import swahili_to_english
+                return swahili_to_english(text)
         except Exception as e:
             logger.warning("Translation to English failed (%s): %s", language, e)
         return text
@@ -861,6 +864,9 @@ class ConversationalAI:
             elif language == "kik":
                 from kikuyu_translator import english_to_kikuyu
                 return english_to_kikuyu(text)
+            elif language == "sw":
+                from swahili_translator import english_to_swahili
+                return english_to_swahili(text)
         except Exception as e:
             logger.warning("Translation from English failed (%s): %s", language, e)
         return text
