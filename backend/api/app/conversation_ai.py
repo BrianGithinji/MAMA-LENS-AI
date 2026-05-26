@@ -640,7 +640,7 @@ class ConversationalAI:
         ctx.add_message("user", user_message)
 
         # ── Layer 1: Intent Detection ──────────────────────────────────
-        intent = self._classify_intent(user_message)
+        intent = self._classify_intent(user_message, ctx)
 
         # ── Layer 2: Risk Classification ───────────────────────────────
         is_emergency, emergency_type = self._check_emergency(user_message, language)
@@ -743,8 +743,8 @@ class ConversationalAI:
     # Intent classification
     # ------------------------------------------------------------------
 
-    def _classify_intent(self, text: str) -> Intent:
-        """Classify user intent using pattern matching."""
+    def _classify_intent(self, text: str, ctx: Optional["ConversationContext"] = None) -> Intent:
+        """Classify user intent using pattern matching + conversation context."""
         text_lower = text.lower()
         scores: Dict[Intent, int] = {}
 
@@ -754,7 +754,20 @@ class ConversationalAI:
             if score > 0:
                 scores[intent] = score
 
+        # Context-aware: short follow-up replies (yes/no/worse/better/still)
+        # inherit the previous intent instead of falling to GENERAL_QUESTION
+        FOLLOWUP_WORDS = {"yes", "no", "yeah", "nope", "still", "worse", "better",
+                         "more", "less", "same", "okay", "ok", "fine", "not really",
+                         "a bit", "a lot", "very", "much", "ndiyo", "hapana", "zaidi",
+                         "bado", "ndio", "sawa"}
+        is_short_followup = len(text_lower.split()) <= 4 and any(
+            w in text_lower for w in FOLLOWUP_WORDS
+        )
+
         if not scores:
+            # Inherit previous intent for follow-up replies
+            if is_short_followup and ctx and ctx.current_intent:
+                return ctx.current_intent
             return Intent.GENERAL_QUESTION
 
         return max(scores, key=lambda k: scores[k])
@@ -870,7 +883,7 @@ class ConversationalAI:
                 )
             except Exception as exc:
                 logger.warning("Local model failed: %s. Using rule-based fallback.", exc)
-        return self._rule_based_response(intent, language, literacy_level), 0.70
+        return self._rule_based_response(intent, language, literacy_level, ctx, user_message), 0.70
 
     # Translation pipeline for low-resource languages
     _TRANSLATE_LANGS = {"maa", "luo", "kik", "sw", "fr", "ar"}
@@ -933,7 +946,7 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Call the fine-tuned flan-t5 model with translation pipeline for low-resource languages."""
+        """Call the fine-tuned flan-t5 model with conversation history and translation pipeline."""
         import sys
         ai_path = os.path.normpath(
             os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")
@@ -950,18 +963,26 @@ class ConversationalAI:
             inference_lang = "en"
             logger.info("Translated %s→en: %s", language, query)
 
-        parts = [query]
+        # Build hint suffix
+        hints = []
         if ctx.gestational_age_weeks:
-            parts.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
+            hints.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
         if inference_lang == "sw":
-            parts.append("(Respond in Swahili)")
+            hints.append("(Respond in Swahili)")
         if literacy_level == "low":
-            parts.append("(Use very simple language)")
+            hints.append("(Use very simple language)")
         if channel in ("sms", "ussd"):
-            parts.append("(Keep response under 160 characters)")
+            hints.append("(Keep response under 160 characters)")
 
+        prompt = query + (" " + " ".join(hints) if hints else "")
         max_tokens = 100 if channel in ("sms", "ussd") else 300
-        response = generate(" ".join(parts), max_new_tokens=max_tokens)
+
+        # Pass last 4 turns of conversation history for context
+        history = ctx.get_recent_messages(4)
+        # Exclude the message we just added (last item is current user message)
+        history = history[:-1] if history and history[-1]["role"] == "user" else history
+
+        response = generate(prompt, max_new_tokens=max_tokens, conversation_history=history)
 
         # Translate response back to target language
         if language in self._TRANSLATE_LANGS:
@@ -971,7 +992,8 @@ class ConversationalAI:
         return response, 0.85
 
     def _rule_based_response(
-        self, intent: Intent, language: str, literacy_level: str
+        self, intent: Intent, language: str, literacy_level: str,
+        ctx: Optional[ConversationContext] = None, user_message: str = "",
     ) -> str:
         """Fallback rule-based responses by intent — full Kiswahili support."""
         responses: Dict[Intent, Dict[str, str]] = {
@@ -1049,19 +1071,8 @@ class ConversationalAI:
                 ),
             },
             Intent.SYMPTOM_CHECK: {
-                "en": "I hear you are experiencing some symptoms. Can you describe them in more detail? When did they start? Are they getting worse?",
-                "sw": (
-                    "Nakusikia una dalili fulani. Niambie zaidi:\n\n"
-                    "• Dalili zinaanza lini?\n"
-                    "• Zinazidi kuwa mbaya?\n"
-                    "• Uko wiki ngapi za ujauzito?\n\n"
-                    "⚠️ Nenda hospitali MARA MOJA ukiwa na:\n"
-                    "• Damu nyingi ukeni\n"
-                    "• Maumivu makali ya kichwa\n"
-                    "• Mtoto hasogei (baada ya wiki 28)\n"
-                    "• Degedege au kuzimia\n\n"
-                    "Elezea dalili zako na nitakusaidia."
-                ),
+                "en": self._symptom_response(ctx, user_message, "en"),
+                "sw": self._symptom_response(ctx, user_message, "sw"),
                 "fr": "Je vous entends avoir des symptomes. Pouvez-vous les decrire plus en detail?",
             },
             Intent.NUTRITION_ADVICE: {
@@ -1156,18 +1167,8 @@ class ConversationalAI:
                 ),
             },
             Intent.GENERAL_QUESTION: {
-                "en": "Thank you for your question. I am here to help with your maternal health journey. Could you tell me more about what you would like to know?",
-                "sw": (
-                    "Asante kwa swali lako. 💚\n"
-                    "Niko hapa kukusaidia katika safari yako ya ujauzito.\n\n"
-                    "Unaweza kuniuliza kuhusu:\n"
-                    "• Dalili na afya yako\n"
-                    "• Lishe na chakula\n"
-                    "• Ziara za kliniki\n"
-                    "• Ukuaji wa mtoto\n"
-                    "• Msaada wa kihisia\n\n"
-                    "Niambie zaidi — ninakusaidia!"
-                ),
+                "en": self._contextual_general_response(ctx, user_message, "en"),
+                "sw": self._contextual_general_response(ctx, user_message, "sw"),
             },
         }
 
@@ -1175,9 +1176,112 @@ class ConversationalAI:
         response = intent_responses.get(language, intent_responses.get("en", ""))
         return response
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
+    def _symptom_response(self, ctx: Optional[ConversationContext], user_message: str, language: str) -> str:
+        """Context-aware symptom response — escalates if user says symptoms are worsening."""
+        msg_lower = user_message.lower()
+        WORSENING = {"worse", "worst", "bad", "very bad", "terrible", "severe",
+                     "getting worse", "still", "yes", "yeah", "ndiyo", "zaidi", "bado", "mbaya"}
+        is_worsening = any(w in msg_lower for w in WORSENING)
+
+        # Check if previous turn was already a symptom check (follow-up)
+        is_followup = (
+            ctx is not None
+            and len(ctx.messages) >= 2
+            and ctx.messages[-2].intent == Intent.SYMPTOM_CHECK.value
+        )
+
+        if is_followup and is_worsening:
+            if language == "sw":
+                return (
+                    "Dalili zinazozidi kuwa mbaya zinahitaji tathmini ya haraka. \u26a0\ufe0f\n\n"
+                    "Tafadhali nenda kliniki au hospitali LEO.\n\n"
+                    "Nenda MARA MOJA kama una:\n"
+                    "\u2022 Maumivu makali ya kichwa + maono mabaya\n"
+                    "\u2022 Damu ukeni\n"
+                    "\u2022 Mtoto hasogei (baada ya wiki 28)\n"
+                    "\u2022 Uvimbe wa uso/mikono ghafla\n\n"
+                    "Je, una dalili nyingine yoyote kama hizi?"
+                )
+            return (
+                "Since your symptoms are getting worse, I strongly recommend you visit a clinic or hospital today. \u26a0\ufe0f\n\n"
+                "Go IMMEDIATELY if you have any of:\n"
+                "\u2022 Severe headache with vision changes\n"
+                "\u2022 Any vaginal bleeding\n"
+                "\u2022 No fetal movement (after 28 weeks)\n"
+                "\u2022 Sudden swelling of face or hands\n\n"
+                "Do you have any of these additional symptoms?"
+            )
+
+        if language == "sw":
+            return (
+                "Nakusikia una dalili fulani. Niambie zaidi:\n\n"
+                "\u2022 Dalili zinaanza lini?\n"
+                "\u2022 Zinazidi kuwa mbaya?\n"
+                "\u2022 Uko wiki ngapi za ujauzito?\n\n"
+                "\u26a0\ufe0f Nenda hospitali MARA MOJA ukiwa na:\n"
+                "\u2022 Damu nyingi ukeni\n"
+                "\u2022 Maumivu makali ya kichwa\n"
+                "\u2022 Mtoto hasogei (baada ya wiki 28)\n"
+                "\u2022 Degedege au kuzimia\n\n"
+                "Elezea dalili zako na nitakusaidia."
+            )
+        return (
+            "I hear you are experiencing symptoms. Can you tell me more?\n\n"
+            "\u2022 When did they start?\n"
+            "\u2022 Are they getting worse?\n"
+            "\u2022 How many weeks pregnant are you?\n\n"
+            "\u26a0\ufe0f Go to hospital IMMEDIATELY if you have:\n"
+            "\u2022 Heavy vaginal bleeding\n"
+            "\u2022 Severe headache or vision changes\n"
+            "\u2022 No fetal movement (after 28 weeks)\n"
+            "\u2022 Seizures or fainting"
+        )
+
+    def _contextual_general_response(self, ctx: Optional[ConversationContext], user_message: str, language: str) -> str:
+        """Context-aware general response — references prior conversation topic."""
+        if ctx and ctx.current_intent and ctx.current_intent != Intent.GENERAL_QUESTION:
+            # User sent a vague reply — continue the previous topic
+            topic_map = {
+                Intent.SYMPTOM_CHECK: {
+                    "en": "Can you tell me more about your symptoms? Are they getting better or worse?",
+                    "sw": "Niambie zaidi kuhusu dalili zako. Zinazidi kuwa mbaya au zinaboresha?",
+                },
+                Intent.NUTRITION_ADVICE: {
+                    "en": "Is there a specific food or nutrition question I can help you with?",
+                    "sw": "Je, kuna swali maalum la chakula au lishe ninaweza kukusaidia nalo?",
+                },
+                Intent.EMOTIONAL_SUPPORT: {
+                    "en": "I'm here with you. Would you like to share more about how you're feeling?",
+                    "sw": "Niko hapa nawe. Ungependa kushiriki zaidi kuhusu unavyohisi?",
+                },
+            }
+            topic_responses = topic_map.get(ctx.current_intent, {})
+            if topic_responses:
+                return topic_responses.get(language, topic_responses.get("en", ""))
+
+        if language == "sw":
+            return (
+                "Asante kwa swali lako. \U0001f49a\n"
+                "Niko hapa kukusaidia katika safari yako ya ujauzito.\n\n"
+                "Unaweza kuniuliza kuhusu:\n"
+                "\u2022 Dalili na afya yako\n"
+                "\u2022 Lishe na chakula\n"
+                "\u2022 Ziara za kliniki\n"
+                "\u2022 Ukuaji wa mtoto\n"
+                "\u2022 Msaada wa kihisia\n\n"
+                "Niambie zaidi \u2014 ninakusaidia!"
+            )
+        return (
+            "I'm here to help with your maternal health journey. \U0001f49a\n\n"
+            "You can ask me about:\n"
+            "\u2022 Symptoms and health concerns\n"
+            "\u2022 Nutrition and diet\n"
+            "\u2022 Clinic visits and ANC\n"
+            "\u2022 Baby development\n"
+            "\u2022 Emotional support\n\n"
+            "What would you like to know?"
+        )
+
 
     def _get_education_content(
         self,

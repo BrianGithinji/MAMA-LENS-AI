@@ -42,15 +42,17 @@ def generate(
     max_new_tokens: int = 300,
     temperature: float = 0.7,
     num_beams: int = 4,
+    conversation_history: Optional[list] = None,
 ) -> str:
     """
     Generate a maternal health response for the given prompt.
 
     Args:
-        prompt: The input text prefixed with 'maternal health: '
-        max_new_tokens: Maximum tokens to generate
-        temperature: Sampling temperature (lower = more focused)
-        num_beams: Beam search width (higher = better quality, slower)
+        prompt: The current user message.
+        max_new_tokens: Maximum tokens to generate.
+        temperature: Sampling temperature (lower = more focused).
+        num_beams: Beam search width.
+        conversation_history: List of {role, content} dicts for context.
 
     Returns:
         Generated response string.
@@ -59,14 +61,24 @@ def generate(
 
     import torch
 
-    # Prefix ensures the model stays in maternal health domain
-    if not prompt.startswith("maternal health:"):
-        prompt = f"maternal health: {prompt}"
+    # Build context-aware prompt from conversation history
+    context_parts = []
+    if conversation_history:
+        # Include last 4 turns (2 user + 2 assistant) to stay within token limit
+        for turn in conversation_history[-4:]:
+            role_label = "Patient" if turn["role"] == "user" else "MAMA"
+            context_parts.append(f"{role_label}: {turn['content']}")
+
+    context_str = "\n".join(context_parts)
+    if context_str:
+        full_prompt = f"maternal health conversation:\n{context_str}\nPatient: {prompt}\nMAMA:"
+    else:
+        full_prompt = f"maternal health: {prompt}"
 
     inputs = _tokenizer(
-        prompt,
+        full_prompt,
         return_tensors="pt",
-        max_length=256,
+        max_length=512,
         truncation=True,
     )
 
@@ -75,6 +87,8 @@ def generate(
             **inputs,
             max_new_tokens=max_new_tokens,
             num_beams=num_beams,
+            temperature=temperature,
+            do_sample=temperature > 0,
             early_stopping=True,
             no_repeat_ngram_size=3,
         )
