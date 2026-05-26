@@ -52,13 +52,30 @@ async def avatar_chat(
     is_emergency = False
     suggested_actions = []
     emotion_detected = None
+    session_id = request.session_id or current_user["_id"]
 
     if not _AI_AVAILABLE:
         text_response = "I'm here to support you. How are you feeling today?"
     else:
         try:
+            # Pre-load history from MongoDB into the in-process session cache
+            # so _classify_intent and _symptom_response have full context
+            if session_id not in _ai._sessions:
+                from app.core.database import get_db
+                db = get_db()
+                doc = await db.conversation_sessions.find_one({"session_id": session_id})
+                if doc and doc.get("messages"):
+                    _ai._get_or_create_session(
+                        session_id,
+                        request.language,
+                        "app",
+                        "medium",
+                        request.gestational_age_weeks,
+                        db_history=doc["messages"][-20:],
+                    )
+
             response = _ai.chat(
-                session_id=request.session_id or current_user["_id"],
+                session_id=session_id,
                 user_message=request.message,
                 language=request.language,
                 channel="app",
@@ -68,7 +85,7 @@ async def avatar_chat(
             intent = response.intent.value
             is_emergency = response.is_emergency
             suggested_actions = response.suggested_actions
-            request.language = response.language  # reflect auto-detected language
+            request.language = response.language
         except Exception as e:
             logger.error("AI chat error", error=str(e))
             raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")

@@ -99,6 +99,9 @@ async def init_db():
     await safe_index(db.community_posts, [("created_at", -1)])
     await safe_index(db.community_posts, "user_id")
 
+    await safe_index(db.conversation_sessions, "session_id", unique=True)
+    await safe_index(db.conversation_sessions, "updated_at")
+
     logger.info("MongoDB indexes ready", db=settings.MONGODB_DB_NAME)
 
     await db.pregnancy_profiles.create_index("user_id")

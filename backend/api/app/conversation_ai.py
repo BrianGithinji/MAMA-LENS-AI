@@ -591,7 +591,7 @@ class ConversationalAI:
     def __init__(self) -> None:
         self._intent_patterns = self._compile_intent_patterns()
         self._emergency_patterns = self._compile_emergency_patterns()
-        self._sessions: Dict[str, ConversationContext] = {}
+        self._sessions: Dict[str, ConversationContext] = {}  # in-process cache
         self._local_model_checked = False
         self._local_model_available = False
 
@@ -628,9 +628,15 @@ class ConversationalAI:
             logger.info("Language auto-adjusted: %s -> %s", language, detected)
             language = detected
 
+        # Load history from MongoDB if session not in memory (handles Render restarts)
+        db_history = None
+        if session_id not in self._sessions:
+            db_history = self._load_history_from_db(session_id)
+
         # Get or create session
         ctx = self._get_or_create_session(
-            session_id, language, channel, literacy_level, gestational_age_weeks
+            session_id, language, channel, literacy_level, gestational_age_weeks,
+            db_history=db_history,
         )
 
         # Update session language if it changed
@@ -682,6 +688,9 @@ class ConversationalAI:
         # Add assistant response to history
         ctx.add_message("assistant", response_text, intent=intent.value)
 
+        # Persist updated history to MongoDB (survives Render restarts/sleeps)
+        self._save_history_to_db(session_id, ctx)
+
         return ConversationResponse(
             message=response_text,
             intent=intent,
@@ -724,20 +733,105 @@ class ConversationalAI:
         channel: str,
         literacy_level: str,
         gestational_age_weeks: Optional[int],
+        db_history: Optional[List[Dict]] = None,
     ) -> ConversationContext:
         if session_id not in self._sessions:
-            self._sessions[session_id] = ConversationContext(
+            ctx = ConversationContext(
                 session_id=session_id,
                 language=language,
                 literacy_level=LiteracyLevel(literacy_level),
                 channel=MessageChannel(channel) if channel in [c.value for c in MessageChannel] else MessageChannel.APP,
                 gestational_age_weeks=gestational_age_weeks,
             )
+            # Restore history from MongoDB if provided
+            if db_history:
+                for m in db_history:
+                    ctx.messages.append(ConversationMessage(
+                        role=m["role"],
+                        content=m["content"],
+                        timestamp=m.get("timestamp", datetime.utcnow().isoformat()),
+                        intent=m.get("intent"),
+                    ))
+                # Restore last known intent from last assistant message
+                for m in reversed(ctx.messages):
+                    if m.role == "assistant" and m.intent:
+                        try:
+                            ctx.current_intent = Intent(m.intent)
+                        except ValueError:
+                            pass
+                        break
+            self._sessions[session_id] = ctx
         else:
             ctx = self._sessions[session_id]
             if gestational_age_weeks:
                 ctx.gestational_age_weeks = gestational_age_weeks
         return self._sessions[session_id]
+
+    def _load_history_from_db(self, session_id: str) -> Optional[List[Dict]]:
+        """Load last 10 messages from MongoDB for this session."""
+        try:
+            from app.core.database import get_db
+            import asyncio
+            db = get_db()
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # We're inside an async context — use run_coroutine_threadsafe or nest
+                import concurrent.futures
+                future = asyncio.ensure_future(
+                    db.conversation_sessions.find_one({"session_id": session_id})
+                )
+                # Can't await here (sync method) — return None and let async path handle it
+                return None
+            doc = loop.run_until_complete(
+                db.conversation_sessions.find_one({"session_id": session_id})
+            )
+            if doc and doc.get("messages"):
+                return doc["messages"][-20:]  # last 20 messages
+        except Exception as e:
+            logger.warning("Failed to load session history: %s", e)
+        return None
+
+    def _save_history_to_db(self, session_id: str, ctx: ConversationContext) -> None:
+        """Persist session history to MongoDB asynchronously."""
+        try:
+            from app.core.database import get_db
+            import asyncio
+            db = get_db()
+            messages = [
+                {
+                    "role": m.role,
+                    "content": m.content,
+                    "timestamp": m.timestamp,
+                    "intent": m.intent,
+                }
+                for m in ctx.messages[-20:]  # keep last 20
+            ]
+            doc = {
+                "session_id": session_id,
+                "language": ctx.language,
+                "messages": messages,
+                "current_intent": ctx.current_intent.value if ctx.current_intent else None,
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(
+                    db.conversation_sessions.update_one(
+                        {"session_id": session_id},
+                        {"$set": doc},
+                        upsert=True,
+                    )
+                )
+            else:
+                loop.run_until_complete(
+                    db.conversation_sessions.update_one(
+                        {"session_id": session_id},
+                        {"$set": doc},
+                        upsert=True,
+                    )
+                )
+        except Exception as e:
+            logger.warning("Failed to save session history: %s", e)
 
     # ------------------------------------------------------------------
     # Intent classification
