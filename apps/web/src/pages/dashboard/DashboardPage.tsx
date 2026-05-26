@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Heart, AlertTriangle, Calendar, MessageCircle,
-  MapPin, BookOpen, Activity, Phone, Baby, Smile,
+  MapPin, BookOpen, Activity, Phone, Baby, Smile, Droplets,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { pregnancyAPI, riskAPI, notificationsAPI } from "../../api/client";
+import { pregnancyAPI, riskAPI, notificationsAPI, anemiaAPI } from "../../api/client";
 import RiskLevelBadge from "../../components/ui/RiskLevelBadge";
 import PregnancyWeekCard from "../../components/pregnancy/PregnancyWeekCard";
 import QuickActionCard from "../../components/dashboard/QuickActionCard";
@@ -28,6 +28,11 @@ export default function DashboardPage() {
     queryFn: () => riskAPI.getHistory(1).then((r) => r.data[0]),
   });
 
+  const { data: latestAnemia } = useQuery({
+    queryKey: ["anemia", "history"],
+    queryFn: () => anemiaAPI.getHistory(1).then((r) => r.data[0]),
+  });
+
   const { data: notifications } = useQuery({
     queryKey: ["notifications", "unread"],
     queryFn: () => notificationsAPI.getAll(true).then((r) => r.data),
@@ -41,6 +46,14 @@ export default function DashboardPage() {
   };
 
   const quickActions = [
+    {
+      icon: Droplets,
+      label: "Anemia Check",
+      description: "Camera-based pallor scan",
+      href: "/anemia",
+      color: "bg-red-50 text-red-600",
+      urgent: latestAnemia?.anemia_level === "severe" || latestAnemia?.anemia_level === "moderate",
+    },
     {
       icon: Activity,
       label: t("risk_assessment"),

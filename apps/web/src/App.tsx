@@ -24,6 +24,8 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import EmergencyPage from "./pages/emergency/EmergencyPage";
 import GriefSupportPage from "./pages/support/GriefSupportPage";
 import MentalHealthPage from "./pages/support/MentalHealthPage";
+import AnemiaDetectionPage from "./pages/anemia/AnemiaDetectionPage";
+import AnemiaResultPage from "./pages/anemia/AnemiaResultPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -66,6 +68,8 @@ export default function App() {
         <Route path="/emergency" element={<EmergencyPage />} />
         <Route path="/grief-support" element={<GriefSupportPage />} />
         <Route path="/mental-health" element={<MentalHealthPage />} />
+        <Route path="/anemia" element={<AnemiaDetectionPage />} />
+        <Route path="/anemia/result/:id" element={<AnemiaResultPage />} />
       </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

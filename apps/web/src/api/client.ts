@@ -135,6 +135,12 @@ export const dailyJournalAPI = {
   logEntry: (data: object) => apiClient.post("/health-records/daily-journal", data),
 };
 
+export const anemiaAPI = {
+  detect: (data: object) => apiClient.post("/anemia/detect", data),
+  getHistory: (limit?: number) => apiClient.get(`/anemia/history?limit=${limit || 10}`),
+  getDetection: (id: string) => apiClient.get(`/anemia/${id}`),
+};
+
 export const communityAPI = {
   getPosts: (topic?: string) =>
     apiClient.get(`/messages/community${topic && topic !== "all" ? `?topic=${topic}` : ""}`),
