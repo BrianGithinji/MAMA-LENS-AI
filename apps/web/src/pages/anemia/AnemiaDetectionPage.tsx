@@ -76,19 +76,25 @@ export default function AnemiaDetectionPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const pendingStreamRef = useRef<MediaStream | null>(null);
 
-  // Attach stream to video element after it mounts/becomes visible
+  // Attach stream once cameraActive flips to true and video element is in DOM
   useEffect(() => {
-    if (cameraActive && videoRef.current && pendingStreamRef.current) {
-      const video = videoRef.current;
-      video.srcObject = pendingStreamRef.current;
-      setVideoReady(false);
-      video.onloadedmetadata = () => {
-        video.play().catch(() => {});
-        setVideoReady(true);
-      };
-    }
+    if (!cameraActive || !streamRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.srcObject = streamRef.current;
+    setVideoReady(false);
+
+    const onCanPlay = () => {
+      video.play().catch(() => {});
+      setVideoReady(true);
+    };
+    video.addEventListener("canplay", onCanPlay, { once: true });
+    // Fallback: if canplay already fired
+    if (video.readyState >= 3) onCanPlay();
+
+    return () => video.removeEventListener("canplay", onCanPlay);
   }, [cameraActive]);
 
   const detectMutation = useMutation({
@@ -107,24 +113,42 @@ export default function AnemiaDetectionPage() {
       return;
     }
     try {
-      // Try rear camera first, fall back to any camera
+      // Stop any existing stream first
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+
+      // Mobile-optimised constraints — avoid fixed resolution that causes black screen
+      // on devices where the requested resolution isn't supported
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
         });
       } catch {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Fallback 1: any rear camera, no resolution constraint
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+          });
+        } catch {
+          // Fallback 2: any camera at all
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
       }
+
       streamRef.current = stream;
-      pendingStreamRef.current = stream;
-      // Set state — useEffect will attach stream once video element is in DOM
-      setCameraActive(true);
+      setCameraActive(true); // triggers useEffect to attach stream
     } catch (err: any) {
-      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        toast.error("Camera permission denied. Please allow camera access in your browser settings.");
-      } else if (err?.name === "NotFoundError") {
+      const name = err?.name ?? "";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        toast.error("Camera permission denied. Allow camera access in browser settings.");
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
         toast.error("No camera found on this device.");
+      } else if (name === "NotReadableError" || name === "TrackStartError") {
+        toast.error("Camera is in use by another app. Close it and try again.");
       } else {
         toast.error("Could not start camera. Try uploading a photo instead.");
       }
@@ -134,9 +158,9 @@ export default function AnemiaDetectionPage() {
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-    pendingStreamRef.current = null;
     if (videoRef.current) {
       videoRef.current.srcObject = null;
+      videoRef.current.load(); // reset video element on mobile
     }
     setVideoReady(false);
     setCameraActive(false);
@@ -350,7 +374,7 @@ export default function AnemiaDetectionPage() {
 
               {/* Camera / Preview */}
               {captured[currentSite.id] ? (
-                <div className="relative rounded-3xl overflow-hidden bg-black aspect-video mb-4">
+                <div className="relative rounded-3xl overflow-hidden bg-black mb-4" style={{ aspectRatio: "4/3" }}>
                   <img
                     src={captured[currentSite.id]}
                     alt="Captured"
@@ -368,45 +392,59 @@ export default function AnemiaDetectionPage() {
                 </div>
               ) : (
                 <>
-                  {/* Video — always in DOM so ref is always available */}
-                  <div className={`relative rounded-3xl overflow-hidden bg-black aspect-video mb-4 ${
-                    cameraActive ? "block" : "hidden"
-                  }`}>
+                  {/*
+                    Video is always rendered in the DOM so the ref is always valid.
+                    Use visibility+position instead of display:none/hidden — mobile
+                    browsers (iOS Safari, Android Chrome) won't attach a stream to
+                    a display:none element, causing a permanent black screen.
+                    aspect-ratio 4:3 matches most mobile rear cameras in portrait.
+                  */}
+                  <div
+                    className="relative rounded-3xl overflow-hidden bg-black mb-4"
+                    style={{
+                      aspectRatio: "4/3",
+                      visibility: cameraActive ? "visible" : "hidden",
+                      height: cameraActive ? "auto" : 0,
+                      marginBottom: cameraActive ? undefined : 0,
+                    }}
+                  >
                     <video
                       ref={videoRef}
-                      className="w-full h-full object-cover"
                       playsInline
                       muted
                       autoPlay
+                      // webkit-playsinline is required for iOS Safari
+                      {...({ "webkit-playsinline": "true" } as any)}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
                     {/* Loading overlay */}
                     {!videoReady && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/70">
                         <div className="text-white text-sm flex flex-col items-center gap-2">
                           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Starting camera...
+                          <span>Starting camera...</span>
                         </div>
                       </div>
                     )}
                     {/* Guide overlay */}
                     {videoReady && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="border-2 border-white/60 rounded-2xl w-2/3 h-2/3 flex items-center justify-center">
-                          <p className="text-white/80 text-xs text-center px-2">Position {currentSite.label} here</p>
+                        <div className="border-2 border-white/70 rounded-2xl w-3/4 h-3/4 flex items-center justify-center">
+                          <p className="text-white/90 text-xs text-center px-3 font-medium">Position {currentSite.label} here</p>
                         </div>
                       </div>
                     )}
-                    {/* Capture button */}
+                    {/* Capture shutter button */}
                     <button
                       onClick={capturePhoto}
                       disabled={!videoReady}
-                      className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center shadow-lg disabled:opacity-40"
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full border-4 border-gray-200 flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-40"
                     >
-                      <div className="w-12 h-12 bg-red-500 rounded-full" />
+                      <div className="w-11 h-11 bg-red-500 rounded-full" />
                     </button>
                     <button
                       onClick={stopCamera}
-                      className="absolute top-3 right-3 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full"
+                      className="absolute top-3 right-3 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full font-medium"
                     >
                       Cancel
                     </button>
@@ -414,7 +452,7 @@ export default function AnemiaDetectionPage() {
 
                   {/* Placeholder when camera is off */}
                   {!cameraActive && (
-                    <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white aspect-video mb-4 flex flex-col items-center justify-center gap-3">
+                    <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white mb-4 flex flex-col items-center justify-center gap-3 py-12">
                       <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${currentSite.color}`}>
                         <SiteIcon className="w-8 h-8" />
                       </div>
@@ -424,7 +462,7 @@ export default function AnemiaDetectionPage() {
                 </>
               )}
 
-              <canvas ref={canvasRef} className="hidden" />
+              <canvas ref={canvasRef} className="hidden" style={{ position: "absolute", top: -9999 }} />
 
               {/* Capture buttons */}
               {!captured[currentSite.id] && !cameraActive && (
