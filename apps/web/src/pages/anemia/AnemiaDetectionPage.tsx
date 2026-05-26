@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
@@ -72,9 +72,24 @@ export default function AnemiaDetectionPage() {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [gestationalAge, setGestationalAge] = useState<number | "">("");
   const [cameraActive, setCameraActive] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const pendingStreamRef = useRef<MediaStream | null>(null);
+
+  // Attach stream to video element after it mounts/becomes visible
+  useEffect(() => {
+    if (cameraActive && videoRef.current && pendingStreamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = pendingStreamRef.current;
+      setVideoReady(false);
+      video.onloadedmetadata = () => {
+        video.play().catch(() => {});
+        setVideoReady(true);
+      };
+    }
+  }, [cameraActive]);
 
   const detectMutation = useMutation({
     mutationFn: (data: object) => anemiaAPI.detect(data),
@@ -87,38 +102,62 @@ export default function AnemiaDetectionPage() {
 
   // ─── Camera helpers ──────────────────────────────────────────────────────
   const startCamera = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast.error("Camera not supported on this device or browser.");
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: 1280, height: 720 },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+      // Try rear camera first, fall back to any camera
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
       }
+      streamRef.current = stream;
+      pendingStreamRef.current = stream;
+      // Set state — useEffect will attach stream once video element is in DOM
       setCameraActive(true);
-    } catch {
-      toast.error("Camera access denied. Please allow camera permissions.");
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        toast.error("Camera permission denied. Please allow camera access in your browser settings.");
+      } else if (err?.name === "NotFoundError") {
+        toast.error("No camera found on this device.");
+      } else {
+        toast.error("Could not start camera. Try uploading a photo instead.");
+      }
     }
   }, []);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    pendingStreamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setVideoReady(false);
     setCameraActive(false);
   }, []);
 
   const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext("2d")!.drawImage(videoRef.current, 0, 0);
+    if (!video || !canvas) return;
+    if (!videoReady || video.videoWidth === 0 || video.videoHeight === 0) {
+      toast.error("Camera not ready yet. Please wait a moment.");
+      return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")!.drawImage(video, 0, 0);
     const b64 = canvas.toDataURL("image/jpeg", 0.85);
     const site = SITES[activeSiteIdx].id;
     setCaptured((prev) => ({ ...prev, [site]: b64 }));
     stopCamera();
-  }, [activeSiteIdx, stopCamera]);
+  }, [activeSiteIdx, stopCamera, videoReady]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -327,35 +366,62 @@ export default function AnemiaDetectionPage() {
                     <RefreshCw className="w-3 h-3" /> Retake
                   </button>
                 </div>
-              ) : cameraActive ? (
-                <div className="relative rounded-3xl overflow-hidden bg-black aspect-video mb-4">
-                  <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
-                  {/* Guide overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="border-2 border-white/60 rounded-2xl w-2/3 h-2/3 flex items-center justify-center">
-                      <p className="text-white/80 text-xs text-center px-2">Position {currentSite.label} here</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={capturePhoto}
-                    className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center shadow-lg"
-                  >
-                    <div className="w-12 h-12 bg-red-500 rounded-full" />
-                  </button>
-                  <button
-                    onClick={stopCamera}
-                    className="absolute top-3 right-3 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full"
-                  >
-                    Cancel
-                  </button>
-                </div>
               ) : (
-                <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white aspect-video mb-4 flex flex-col items-center justify-center gap-3">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${currentSite.color}`}>
-                    <SiteIcon className="w-8 h-8" />
+                <>
+                  {/* Video — always in DOM so ref is always available */}
+                  <div className={`relative rounded-3xl overflow-hidden bg-black aspect-video mb-4 ${
+                    cameraActive ? "block" : "hidden"
+                  }`}>
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover"
+                      playsInline
+                      muted
+                      autoPlay
+                    />
+                    {/* Loading overlay */}
+                    {!videoReady && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <div className="text-white text-sm flex flex-col items-center gap-2">
+                          <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Starting camera...
+                        </div>
+                      </div>
+                    )}
+                    {/* Guide overlay */}
+                    {videoReady && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="border-2 border-white/60 rounded-2xl w-2/3 h-2/3 flex items-center justify-center">
+                          <p className="text-white/80 text-xs text-center px-2">Position {currentSite.label} here</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* Capture button */}
+                    <button
+                      onClick={capturePhoto}
+                      disabled={!videoReady}
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center shadow-lg disabled:opacity-40"
+                    >
+                      <div className="w-12 h-12 bg-red-500 rounded-full" />
+                    </button>
+                    <button
+                      onClick={stopCamera}
+                      className="absolute top-3 right-3 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full"
+                    >
+                      Cancel
+                    </button>
                   </div>
-                  <p className="text-gray-500 text-sm">No image captured yet</p>
-                </div>
+
+                  {/* Placeholder when camera is off */}
+                  {!cameraActive && (
+                    <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white aspect-video mb-4 flex flex-col items-center justify-center gap-3">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${currentSite.color}`}>
+                        <SiteIcon className="w-8 h-8" />
+                      </div>
+                      <p className="text-gray-500 text-sm">No image captured yet</p>
+                    </div>
+                  )}
+                </>
               )}
 
               <canvas ref={canvasRef} className="hidden" />
