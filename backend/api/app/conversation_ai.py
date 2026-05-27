@@ -1013,7 +1013,11 @@ class ConversationalAI:
             temperature=0.7,
             do_sample=True,
             repetition_penalty=1.3,
-        ).strip()
+            stream=False,
+        )
+        if not isinstance(response, str):
+            response = "".join(response)
+        response = response.strip()
 
         if language in self._TRANSLATE_LANGS:
             response = self._translate_from_english(response, language)
