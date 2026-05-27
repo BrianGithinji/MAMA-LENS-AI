@@ -156,6 +156,8 @@ async def debug_ai():
         "cwd": cwd,
         "file_dir": file_dir,
         "HF_MODEL_ID": hf_model_id,
+        "HF_MODEL_ID_clean": hf_model_id.strip(),
+        "HF_MODEL_ID_len": len(hf_model_id),
         "candidate_paths": path_checks,
         "transformers": transformers_ok,
         "torch": torch_ok,

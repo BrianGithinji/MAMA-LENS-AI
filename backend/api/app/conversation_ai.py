@@ -944,36 +944,15 @@ class ConversationalAI:
     # ------------------------------------------------------------------
 
     def _check_local_model(self) -> bool:
-        """Check once whether the local flan-t5 inference module is available."""
+        """Check once whether transformers+torch are available (model loads from HF Hub on Render)."""
         if not self._local_model_checked:
             try:
-                import sys
-                # Try multiple path strategies to find the model directory
-                # Works both locally and on Render (where rootDir is backend/api)
-                candidate_paths = [
-                    # Render: repo root is at /opt/render/project/src, backend runs from backend/api
-                    os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")),
-                    # Render alternative: relative to working directory
-                    os.path.normpath(os.path.join(os.getcwd(), "..", "..", "ai", "mama_model")),
-                    os.path.normpath(os.path.join(os.getcwd(), "ai", "mama_model")),
-                    # Absolute Render path
-                    "/opt/render/project/src/ai/mama_model",
-                ]
-                ai_path = None
-                for p in candidate_paths:
-                    if os.path.isdir(p):
-                        ai_path = p
-                        break
-
-                if ai_path and ai_path not in sys.path:
-                    sys.path.insert(0, ai_path)
-                    logger.info("AI model path resolved: %s", ai_path)
-
-                from inference import is_available  # type: ignore
-                self._local_model_available = is_available()
-                logger.info("Local model available: %s", self._local_model_available)
-            except Exception as e:
-                logger.warning("Local model check failed: %s", e)
+                import transformers  # noqa
+                import torch  # noqa
+                self._local_model_available = True
+                logger.info("transformers+torch available, model will load from HF Hub")
+            except ImportError as e:
+                logger.warning("transformers/torch not available: %s", e)
                 self._local_model_available = False
             self._local_model_checked = True
         return self._local_model_available
@@ -1058,19 +1037,85 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Call the fine-tuned flan-t5 model with conversation history and translation pipeline."""
-        import sys
-        candidate_paths = [
-            os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")),
-            os.path.normpath(os.path.join(os.getcwd(), "..", "..", "ai", "mama_model")),
-            os.path.normpath(os.path.join(os.getcwd(), "ai", "mama_model")),
-            "/opt/render/project/src/ai/mama_model",
-        ]
-        for p in candidate_paths:
-            if os.path.isdir(p) and p not in sys.path:
-                sys.path.insert(0, p)
-                break
-        from inference import generate  # type: ignore
+        """Call the fine-tuned flan-t5 model with conversation history."""
+        import sys, os
+
+        # On Render: inference.py lives in ai/mama_model which is NOT copied into
+        # the Docker image (rootDir=backend/api). So we inline the generate logic
+        # here using the HF_MODEL_ID env var directly.
+        hf_model_id = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
+        cache_dir = os.environ.get("HF_HOME", "/tmp/hf_cache")
+
+        # Try importing from local inference.py first (dev), else use inline logic
+        try:
+            candidate_paths = [
+                os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")),
+                os.path.normpath(os.path.join(os.getcwd(), "ai", "mama_model")),
+                "/opt/render/project/src/ai/mama_model",
+            ]
+            for p in candidate_paths:
+                if os.path.isdir(p) and p not in sys.path:
+                    sys.path.insert(0, p)
+                    break
+            from inference import generate  # type: ignore
+            use_inline = False
+        except ImportError:
+            use_inline = True
+
+        # Build context-aware prompt
+        context_parts = []
+        history = ctx.get_recent_messages(4)
+        history = history[:-1] if history and history[-1]["role"] == "user" else history
+        for turn in history:
+            role_label = "Patient" if turn["role"] == "user" else "MAMA"
+            context_parts.append(f"{role_label}: {turn['content']}")
+
+        query = user_message
+        if language in self._TRANSLATE_LANGS:
+            query = self._translate_to_english(user_message, language)
+
+        hints = []
+        if ctx.gestational_age_weeks:
+            hints.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
+        if literacy_level == "low":
+            hints.append("(Use very simple language)")
+        if channel in ("sms", "ussd"):
+            hints.append("(Keep response under 160 characters)")
+
+        prompt = query + (" " + " ".join(hints) if hints else "")
+        context_str = "\n".join(context_parts)
+        full_prompt = (
+            f"maternal health conversation:\n{context_str}\nPatient: {prompt}\nMAMA:"
+            if context_str else f"maternal health: {prompt}"
+        )
+        max_tokens = 100 if channel in ("sms", "ussd") else 300
+
+        if use_inline:
+            # Inline generation using HF Hub model directly
+            import torch
+            from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+
+            if not hasattr(self, "_tokenizer") or self._tokenizer is None:
+                logger.info("Loading MAMA model from HF Hub: %s", hf_model_id)
+                self._tokenizer = AutoTokenizer.from_pretrained(hf_model_id, cache_dir=cache_dir)
+                self._hf_model = AutoModelForSeq2SeqLM.from_pretrained(hf_model_id, cache_dir=cache_dir)
+                self._hf_model.eval()
+                logger.info("MAMA model loaded")
+
+            inputs = self._tokenizer(full_prompt, return_tensors="pt", max_length=512, truncation=True)
+            with torch.no_grad():
+                outputs = self._hf_model.generate(
+                    **inputs, max_new_tokens=max_tokens, num_beams=4,
+                    temperature=0.7, do_sample=True, early_stopping=True, no_repeat_ngram_size=3,
+                )
+            response = self._tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+        else:
+            response = generate(prompt, max_new_tokens=max_tokens, conversation_history=history)
+
+        if language in self._TRANSLATE_LANGS:
+            response = self._translate_from_english(response, language)
+
+        return response, 0.85
 
         # For low-resource languages: translate input → English, run model, translate back
         inference_lang = language
