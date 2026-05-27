@@ -961,7 +961,7 @@ class ConversationalAI:
         try:
             return self._hf_api_response(ctx, user_message, language, literacy_level, channel)
         except Exception as exc:
-            logger.warning("HF Inference API failed: %s. Using rule-based fallback.", exc)
+            logger.warning("HF Inference API failed: %s: %s. Using rule-based fallback.", type(exc).__name__, repr(exc))
         return self._rule_based_response(intent, language, literacy_level, ctx, user_message), 0.70
 
     def _check_local_model(self) -> bool:
