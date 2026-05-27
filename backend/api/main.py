@@ -92,7 +92,6 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
-    # Check AI model status
     ai_model_status = "unavailable"
     ai_model_path = None
     try:
@@ -100,7 +99,6 @@ async def health_check():
         if _AI_AVAILABLE and _ai is not None:
             available = _ai._check_local_model()
             ai_model_status = "local_model" if available else "rule_based_fallback"
-            # Report which path was resolved
             import sys
             for p in sys.path:
                 if "mama_model" in p:
@@ -118,6 +116,50 @@ async def health_check():
         "db_ready": _db_ready,
         "ai_model": ai_model_status,
         "ai_model_path": ai_model_path,
+    }
+
+
+@app.get("/debug/ai")
+async def debug_ai():
+    import os, sys
+    cwd = os.getcwd()
+    file_dir = os.path.dirname(os.path.abspath(__file__))
+    hf_model_id = os.environ.get("HF_MODEL_ID", "NOT SET")
+
+    candidate_paths = [
+        os.path.normpath(os.path.join(file_dir, "..", "..", "..", "..", "ai", "mama_model")),
+        os.path.normpath(os.path.join(cwd, "..", "..", "ai", "mama_model")),
+        os.path.normpath(os.path.join(cwd, "ai", "mama_model")),
+        "/opt/render/project/src/ai/mama_model",
+    ]
+
+    path_checks = {}
+    for p in candidate_paths:
+        path_checks[p] = {
+            "exists": os.path.isdir(p),
+            "files": os.listdir(p) if os.path.isdir(p) else [],
+        }
+
+    try:
+        import transformers
+        transformers_ok = transformers.__version__
+    except ImportError as e:
+        transformers_ok = f"MISSING: {e}"
+
+    try:
+        import torch
+        torch_ok = torch.__version__
+    except ImportError as e:
+        torch_ok = f"MISSING: {e}"
+
+    return {
+        "cwd": cwd,
+        "file_dir": file_dir,
+        "HF_MODEL_ID": hf_model_id,
+        "candidate_paths": path_checks,
+        "transformers": transformers_ok,
+        "torch": torch_ok,
+        "sys_path_top5": sys.path[:5],
     }
 
 
