@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     rootDir: backend/api
-    buildCommand: pip install -r requirements.txt && HF_HOME=/tmp/hf_cache python -c "from transformers import AutoTokenizer, AutoModelForSeq2SeqLM; AutoTokenizer.from_pretrained('BrianGithinji/mama-flan-t5', cache_dir='/tmp/hf_cache'); AutoModelForSeq2SeqLM.from_pretrained('BrianGithinji/mama-flan-t5', cache_dir='/tmp/hf_cache'); print('MAMA model cached.')"
+    buildCommand: pip install -r requirements.txt && HF_MODEL_ID=BrianGithinji/mama-flan-t5 HF_HOME=/tmp/hf_cache python scripts/download_model.py
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /health
     autoDeploy: true

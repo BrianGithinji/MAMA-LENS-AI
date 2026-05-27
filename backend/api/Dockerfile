@@ -18,7 +18,8 @@ COPY . .
 
 # Pre-download the fine-tuned MAMA model at build time
 ARG HF_MODEL_ID=BrianGithinji/mama-flan-t5
-RUN python -c 'from transformers import AutoTokenizer, AutoModelForSeq2SeqLM; AutoTokenizer.from_pretrained("BrianGithinji/mama-flan-t5", cache_dir="/tmp/hf_cache"); AutoModelForSeq2SeqLM.from_pretrained("BrianGithinji/mama-flan-t5", cache_dir="/tmp/hf_cache"); print("MAMA model cached.")'
+ENV HF_HOME=/tmp/hf_cache
+RUN python scripts/download_model.py
 
 # Create non-root user
 RUN useradd -m -u 1000 mamalens && chown -R mamalens:mamalens /app
