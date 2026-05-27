@@ -15,9 +15,13 @@ logger = logging.getLogger(__name__)
 
 _FINETUNED_PATH = Path(__file__).parent / "mama-flan-t5"
 _BASE_MODEL = "google/flan-t5-base"
-_HF_MODEL_ID = "BrianGithinji/mama-flan-t5"  # HuggingFace Hub fallback for Render
+# HF Hub repo — set HF_MODEL_ID env var on Render, or falls back to base model
+_HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "BrianGithinji/mama-flan-t5")
 
-# Singleton — loaded once on first use
+# Cache dir for Render (ephemeral but persists within a deploy session)
+_HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
+
+# Singleton
 _tokenizer = None
 _model = None
 
@@ -29,19 +33,34 @@ def _load_model():
 
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-    # Priority: local fine-tuned → HF Hub fine-tuned → base model
-    if _FINETUNED_PATH.exists() and (_FINETUNED_PATH / "model.safetensors").exists():
-        model_path = str(_FINETUNED_PATH)
-        logger.info("Loading local fine-tuned MAMA model from: %s", model_path)
-    else:
-        # On Render or any server without local weights — pull from HF Hub
-        model_path = _HF_MODEL_ID
-        logger.info("Local model not found. Loading from HuggingFace Hub: %s", model_path)
+    local_weights = _FINETUNED_PATH / "model.safetensors"
 
-    _tokenizer = AutoTokenizer.from_pretrained(model_path)
-    _model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+    if _FINETUNED_PATH.exists() and local_weights.exists():
+        # Local fine-tuned weights found (dev machine)
+        model_path = str(_FINETUNED_PATH)
+        logger.info("Loading local fine-tuned MAMA model: %s", model_path)
+    elif _HF_MODEL_ID and _HF_MODEL_ID != "BrianGithinji/mama-flan-t5":
+        # Custom HF repo set via env var
+        model_path = _HF_MODEL_ID
+        logger.info("Loading MAMA model from HF Hub (env): %s", model_path)
+    else:
+        # Try HF Hub fine-tuned repo, fall back to base model
+        try:
+            from huggingface_hub import repo_exists
+            if repo_exists(_HF_MODEL_ID):
+                model_path = _HF_MODEL_ID
+                logger.info("Loading MAMA model from HF Hub: %s", model_path)
+            else:
+                model_path = _BASE_MODEL
+                logger.warning("HF Hub repo not found (%s), using base model", _HF_MODEL_ID)
+        except Exception:
+            model_path = _BASE_MODEL
+            logger.warning("HF Hub check failed, using base model: %s", _BASE_MODEL)
+
+    _tokenizer = AutoTokenizer.from_pretrained(model_path, cache_dir=_HF_CACHE_DIR)
+    _model = AutoModelForSeq2SeqLM.from_pretrained(model_path, cache_dir=_HF_CACHE_DIR)
     _model.eval()
-    logger.info("MAMA model loaded successfully from: %s", model_path)
+    logger.info("MAMA model loaded: %s", model_path)
 
 
 def generate(
