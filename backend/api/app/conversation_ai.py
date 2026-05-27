@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 _HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
 _HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
 _HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
-_HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{_HF_MODEL_ID}"
+_HF_INFERENCE_URL = f"https://router.huggingface.co/hf-inference/models/{_HF_MODEL_ID}"
 
 # ---------------------------------------------------------------------------
 # Enums

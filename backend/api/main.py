@@ -128,6 +128,7 @@ async def debug_network():
     for url in [
         "https://huggingface.co",
         "https://api-inference.huggingface.co",
+        "https://router.huggingface.co",
     ]:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
