@@ -1061,8 +1061,6 @@ class ConversationalAI:
         hints = []
         if ctx.gestational_age_weeks:
             hints.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
-        if inference_lang == "sw":
-            hints.append("(Respond in Swahili)")
         if literacy_level == "low":
             hints.append("(Use very simple language)")
         if channel in ("sms", "ussd"):
@@ -1266,8 +1264,16 @@ class ConversationalAI:
             },
         }
 
-        intent_responses = responses.get(intent, responses[Intent.GENERAL_QUESTION])
+        # For intents with dynamic responses, call directly to avoid eager evaluation issues
+        if intent == Intent.SYMPTOM_CHECK:
+            return self._symptom_response(ctx, user_message, language)
+        if intent == Intent.GENERAL_QUESTION:
+            return self._contextual_general_response(ctx, user_message, language)
+
+        intent_responses = responses.get(intent, {})
         response = intent_responses.get(language, intent_responses.get("en", ""))
+        if not response:
+            return self._contextual_general_response(ctx, user_message, language)
         return response
 
     def _symptom_response(self, ctx: Optional[ConversationContext], user_message: str, language: str) -> str:
