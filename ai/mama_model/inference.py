@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 _FINETUNED_PATH = Path(__file__).parent / "mama-flan-t5"
 _BASE_MODEL = "google/flan-t5-base"
+_HF_MODEL_ID = "BrianGithinji/mama-flan-t5"  # HuggingFace Hub fallback for Render
 
 # Singleton — loaded once on first use
 _tokenizer = None
@@ -28,13 +29,19 @@ def _load_model():
 
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-    model_path = str(_FINETUNED_PATH) if _FINETUNED_PATH.exists() else _BASE_MODEL
-    logger.info("Loading MAMA model from: %s", model_path)
+    # Priority: local fine-tuned → HF Hub fine-tuned → base model
+    if _FINETUNED_PATH.exists() and (_FINETUNED_PATH / "model.safetensors").exists():
+        model_path = str(_FINETUNED_PATH)
+        logger.info("Loading local fine-tuned MAMA model from: %s", model_path)
+    else:
+        # On Render or any server without local weights — pull from HF Hub
+        model_path = _HF_MODEL_ID
+        logger.info("Local model not found. Loading from HuggingFace Hub: %s", model_path)
 
     _tokenizer = AutoTokenizer.from_pretrained(model_path)
     _model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
     _model.eval()
-    logger.info("MAMA model loaded successfully.")
+    logger.info("MAMA model loaded successfully from: %s", model_path)
 
 
 def generate(
