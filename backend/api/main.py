@@ -92,6 +92,23 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
+    # Check AI model status
+    ai_model_status = "unavailable"
+    ai_model_path = None
+    try:
+        from app.api.v1.endpoints.ai_avatar import _ai, _AI_AVAILABLE
+        if _AI_AVAILABLE and _ai is not None:
+            available = _ai._check_local_model()
+            ai_model_status = "local_model" if available else "rule_based_fallback"
+            # Report which path was resolved
+            import sys
+            for p in sys.path:
+                if "mama_model" in p:
+                    ai_model_path = p
+                    break
+    except Exception as e:
+        ai_model_status = f"error: {str(e)[:80]}"
+
     return {
         "status": "healthy",
         "service": "MAMA-LENS AI",
@@ -99,6 +116,8 @@ async def health_check():
         "environment": settings.APP_ENV,
         "database": "MongoDB Atlas",
         "db_ready": _db_ready,
+        "ai_model": ai_model_status,
+        "ai_model_path": ai_model_path,
     }
 
 

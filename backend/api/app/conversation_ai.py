@@ -948,14 +948,32 @@ class ConversationalAI:
         if not self._local_model_checked:
             try:
                 import sys
-                ai_path = os.path.normpath(
-                    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")
-                )
-                if ai_path not in sys.path:
+                # Try multiple path strategies to find the model directory
+                # Works both locally and on Render (where rootDir is backend/api)
+                candidate_paths = [
+                    # Render: repo root is at /opt/render/project/src, backend runs from backend/api
+                    os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")),
+                    # Render alternative: relative to working directory
+                    os.path.normpath(os.path.join(os.getcwd(), "..", "..", "ai", "mama_model")),
+                    os.path.normpath(os.path.join(os.getcwd(), "ai", "mama_model")),
+                    # Absolute Render path
+                    "/opt/render/project/src/ai/mama_model",
+                ]
+                ai_path = None
+                for p in candidate_paths:
+                    if os.path.isdir(p):
+                        ai_path = p
+                        break
+
+                if ai_path and ai_path not in sys.path:
                     sys.path.insert(0, ai_path)
+                    logger.info("AI model path resolved: %s", ai_path)
+
                 from inference import is_available  # type: ignore
                 self._local_model_available = is_available()
-            except Exception:
+                logger.info("Local model available: %s", self._local_model_available)
+            except Exception as e:
+                logger.warning("Local model check failed: %s", e)
                 self._local_model_available = False
             self._local_model_checked = True
         return self._local_model_available
@@ -1042,11 +1060,16 @@ class ConversationalAI:
     ) -> Tuple[str, float]:
         """Call the fine-tuned flan-t5 model with conversation history and translation pipeline."""
         import sys
-        ai_path = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")
-        )
-        if ai_path not in sys.path:
-            sys.path.insert(0, ai_path)
+        candidate_paths = [
+            os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")),
+            os.path.normpath(os.path.join(os.getcwd(), "..", "..", "ai", "mama_model")),
+            os.path.normpath(os.path.join(os.getcwd(), "ai", "mama_model")),
+            "/opt/render/project/src/ai/mama_model",
+        ]
+        for p in candidate_paths:
+            if os.path.isdir(p) and p not in sys.path:
+                sys.path.insert(0, p)
+                break
         from inference import generate  # type: ignore
 
         # For low-resource languages: translate input → English, run model, translate back
