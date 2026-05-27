@@ -74,6 +74,7 @@ app = FastAPI(
 _base_origins = [
     "https://mama-lens.netlify.app",
     "https://mama-lens-ai.netlify.app",
+    "https://mama-lens-ai.onrender.com",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
@@ -164,15 +165,27 @@ async def debug_ai():
     except ImportError as e:
         torch_ok = f"MISSING: {e}"
 
+    # Check if model is actually loaded in memory
+    model_loaded = False
+    model_dtype = None
+    try:
+        from app.api.v1.endpoints.ai_avatar import _ai, _AI_AVAILABLE
+        if _AI_AVAILABLE and _ai is not None and hasattr(_ai, "_hf_model") and _ai._hf_model is not None:
+            model_loaded = True
+            model_dtype = str(next(_ai._hf_model.parameters()).dtype)
+    except Exception as e:
+        model_loaded = f"error: {str(e)[:80]}"
+
     return {
         "HF_MODEL_ID": hf_model_id,
         "HF_HOME": hf_home,
-        "hf_cache_files": hf_cache_files,
         "hf_cache_file_count": len(hf_cache_files),
+        "hf_cache_files": hf_cache_files,
+        "model_loaded_in_memory": model_loaded,
+        "model_dtype": model_dtype,
         "transformers": transformers_ok,
         "torch": torch_ok,
         "cwd": os.getcwd(),
-        "sys_path_top5": sys.path[:5],
     }
 
 

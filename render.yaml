@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: mamalens-api
+    name: mama-lens-ai
     runtime: python
     region: oregon
     plan: free
