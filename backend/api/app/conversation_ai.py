@@ -947,16 +947,14 @@ class ConversationalAI:
     # ------------------------------------------------------------------
 
     def _check_local_model(self) -> bool:
-        """Check once whether the model is loaded (or can be loaded from HF cache)."""
+        """Return True if the model is loaded and ready."""
+        if hasattr(self, "_hf_model") and self._hf_model is not None:
+            return True
         if not self._local_model_checked:
             try:
                 import transformers, torch  # noqa
-                # Trigger actual model load now so first request is instant
-                if not hasattr(self, "_hf_model") or self._hf_model is None:
-                    self._load_hf_model()
                 self._local_model_available = True
-            except Exception as e:
-                logger.warning("Model load failed, using rule-based fallback: %s", e)
+            except Exception:
                 self._local_model_available = False
             self._local_model_checked = True
         return self._local_model_available

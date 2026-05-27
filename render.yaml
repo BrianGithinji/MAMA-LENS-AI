@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     rootDir: backend/api
-    buildCommand: pip install -r requirements.txt && HF_MODEL_ID=BrianGithinji/mama-flan-t5 HF_HOME=/tmp/hf_cache python scripts/download_model.py
+    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /health
     autoDeploy: true

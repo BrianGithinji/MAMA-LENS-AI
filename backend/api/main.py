@@ -29,11 +29,29 @@ async def _ensure_db():
         logger.error("MongoDB init failed", error=str(e))
 
 
+async def _ensure_model():
+    """Download + cache the MAMA flan-t5 model in a background thread at startup."""
+    import asyncio
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _load_model_sync)
+
+
+def _load_model_sync():
+    try:
+        from app.api.v1.endpoints.ai_avatar import _ai, _AI_AVAILABLE
+        if _AI_AVAILABLE and _ai is not None:
+            _ai._load_hf_model()
+            logger.info("MAMA model ready")
+    except Exception as e:
+        logger.warning("Model preload failed (rule-based fallback active)", error=str(e))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("MAMA-LENS AI starting", version=settings.APP_VERSION)
     import asyncio
     asyncio.create_task(_ensure_db())
+    asyncio.create_task(_ensure_model())
     yield
     try:
         from app.core.database import close_db
