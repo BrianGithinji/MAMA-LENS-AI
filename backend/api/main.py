@@ -119,6 +119,25 @@ async def health_check():
     }
 
 
+@app.get("/debug/network")
+async def debug_network():
+    """Test outbound connectivity from Render to HuggingFace."""
+    import httpx, os
+    hf_token = os.environ.get("HF_API_TOKEN", "")
+    results = {}
+    for url in [
+        "https://huggingface.co",
+        "https://api-inference.huggingface.co",
+    ]:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                r = await client.get(url, headers={"Authorization": f"Bearer {hf_token}"} if hf_token else {})
+                results[url] = {"status": r.status_code}
+        except Exception as e:
+            results[url] = {"error": str(e)}
+    return results
+
+
 @app.get("/debug/ai")
 async def debug_ai():
     import os, sys

@@ -977,7 +977,7 @@ class ConversationalAI:
         channel: str,
     ) -> Tuple[str, float]:
         """Call BrianGithinji/mama-flan-t5 via HuggingFace Inference API."""
-        import urllib.request, json as _json
+        import httpx, json as _json
 
         # Build context-aware prompt (same as before)
         history = ctx.get_recent_messages(4)
@@ -1007,7 +1007,7 @@ class ConversationalAI:
         )
         max_tokens = 100 if channel in ("sms", "ussd") else 300
 
-        payload = _json.dumps({
+        payload = {
             "inputs": full_prompt,
             "parameters": {
                 "max_new_tokens": max_tokens,
@@ -1017,20 +1017,17 @@ class ConversationalAI:
                 "no_repeat_ngram_size": 3,
             },
             "options": {"wait_for_model": True},
-        }).encode()
+        }
 
-        req = urllib.request.Request(
-            _HF_INFERENCE_URL,
-            data=payload,
-            headers={
-                "Authorization": f"Bearer {_HF_API_TOKEN}",
-                "Content-Type": "application/json",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = _json.loads(resp.read())
+        with httpx.Client(timeout=60) as client:
+            resp = client.post(
+                _HF_INFERENCE_URL,
+                json=payload,
+                headers={"Authorization": f"Bearer {_HF_API_TOKEN}"},
+            )
+            resp.raise_for_status()
+            result = resp.json()
 
-        # HF returns [{"generated_text": "..."}]
         response = result[0]["generated_text"].strip() if result else ""
 
         if language in self._TRANSLATE_LANGS:
