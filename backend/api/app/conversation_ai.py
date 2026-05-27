@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 _HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
 _HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
 _HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
-# router.huggingface.co resolves on Render free tier; api-inference subdomain is blocked
-_HF_INFERENCE_URL = f"https://router.huggingface.co/hf-inference/models/{_HF_MODEL_ID}/v1/text-generation"
+_HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{_HF_MODEL_ID}"
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -977,10 +976,9 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Call BrianGithinji/mama-flan-t5 via HuggingFace Inference API."""
-        import httpx, json as _json
+        """Call BrianGithinji/mama-flan-t5 via huggingface_hub InferenceClient."""
+        from huggingface_hub import InferenceClient
 
-        # Build context-aware prompt (same as before)
         history = ctx.get_recent_messages(4)
         history = history[:-1] if history and history[-1]["role"] == "user" else history
         context_parts = [
@@ -1008,28 +1006,14 @@ class ConversationalAI:
         )
         max_tokens = 100 if channel in ("sms", "ussd") else 300
 
-        payload = {
-            "inputs": full_prompt,
-            "parameters": {
-                "max_new_tokens": max_tokens,
-                "num_beams": 4,
-                "temperature": 0.7,
-                "do_sample": True,
-                "no_repeat_ngram_size": 3,
-            },
-            "options": {"wait_for_model": True},
-        }
-
-        with httpx.Client(timeout=60) as client:
-            resp = client.post(
-                _HF_INFERENCE_URL,
-                json=payload,
-                headers={"Authorization": f"Bearer {_HF_API_TOKEN}"},
-            )
-            resp.raise_for_status()
-            result = resp.json()
-
-        response = result[0]["generated_text"].strip() if result else ""
+        client = InferenceClient(model=_HF_MODEL_ID, token=_HF_API_TOKEN, timeout=60)
+        response = client.text_generation(
+            full_prompt,
+            max_new_tokens=max_tokens,
+            temperature=0.7,
+            do_sample=True,
+            repetition_penalty=1.3,
+        ).strip()
 
         if language in self._TRANSLATE_LANGS:
             response = self._translate_from_english(response, language)
