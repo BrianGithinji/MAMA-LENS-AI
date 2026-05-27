@@ -129,6 +129,7 @@ async def debug_network():
         "https://huggingface.co",
         "https://api-inference.huggingface.co",
         "https://router.huggingface.co",
+        f"https://router.huggingface.co/hf-inference/models/BrianGithinji/mama-flan-t5/v1/text-generation",
     ]:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
