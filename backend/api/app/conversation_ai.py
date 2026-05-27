@@ -17,6 +17,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+_HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
+_HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
+
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -944,18 +947,30 @@ class ConversationalAI:
     # ------------------------------------------------------------------
 
     def _check_local_model(self) -> bool:
-        """Check once whether transformers+torch are available (model loads from HF Hub on Render)."""
+        """Check once whether the model is loaded (or can be loaded from HF cache)."""
         if not self._local_model_checked:
             try:
-                import transformers  # noqa
-                import torch  # noqa
+                import transformers, torch  # noqa
+                # Trigger actual model load now so first request is instant
+                if not hasattr(self, "_hf_model") or self._hf_model is None:
+                    self._load_hf_model()
                 self._local_model_available = True
-                logger.info("transformers+torch available, model will load from HF Hub")
-            except ImportError as e:
-                logger.warning("transformers/torch not available: %s", e)
+            except Exception as e:
+                logger.warning("Model load failed, using rule-based fallback: %s", e)
                 self._local_model_available = False
             self._local_model_checked = True
         return self._local_model_available
+
+    def _load_hf_model(self) -> None:
+        """Load tokenizer + model from HF cache (pre-downloaded at build time)."""
+        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+        model_id = _HF_MODEL_ID  # BrianGithinji/mama-flan-t5
+        cache_dir = _HF_CACHE_DIR
+        logger.info("Loading MAMA model: %s (cache: %s)", model_id, cache_dir)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir)
+        self._hf_model = AutoModelForSeq2SeqLM.from_pretrained(model_id, cache_dir=cache_dir)
+        self._hf_model.eval()
+        logger.info("MAMA model loaded")
 
     def _generate_response(
         self,
@@ -1091,16 +1106,10 @@ class ConversationalAI:
         max_tokens = 100 if channel in ("sms", "ussd") else 300
 
         if use_inline:
-            # Inline generation using HF Hub model directly
+            # Inline generation using HF cache (pre-downloaded at build time)
             import torch
-            from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-
-            if not hasattr(self, "_tokenizer") or self._tokenizer is None:
-                logger.info("Loading MAMA model from HF Hub: %s", hf_model_id)
-                self._tokenizer = AutoTokenizer.from_pretrained(hf_model_id, cache_dir=cache_dir)
-                self._hf_model = AutoModelForSeq2SeqLM.from_pretrained(hf_model_id, cache_dir=cache_dir)
-                self._hf_model.eval()
-                logger.info("MAMA model loaded")
+            if not hasattr(self, "_hf_model") or self._hf_model is None:
+                self._load_hf_model()
 
             inputs = self._tokenizer(full_prompt, return_tensors="pt", max_length=512, truncation=True)
             with torch.no_grad():

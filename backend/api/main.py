@@ -122,23 +122,16 @@ async def health_check():
 @app.get("/debug/ai")
 async def debug_ai():
     import os, sys
-    cwd = os.getcwd()
-    file_dir = os.path.dirname(os.path.abspath(__file__))
-    hf_model_id = os.environ.get("HF_MODEL_ID", "NOT SET")
+    hf_model_id = os.environ.get("HF_MODEL_ID", "NOT SET").strip()
+    hf_home = os.environ.get("HF_HOME", "/tmp/hf_cache")
 
-    candidate_paths = [
-        os.path.normpath(os.path.join(file_dir, "..", "..", "..", "..", "ai", "mama_model")),
-        os.path.normpath(os.path.join(cwd, "..", "..", "ai", "mama_model")),
-        os.path.normpath(os.path.join(cwd, "ai", "mama_model")),
-        "/opt/render/project/src/ai/mama_model",
-    ]
-
-    path_checks = {}
-    for p in candidate_paths:
-        path_checks[p] = {
-            "exists": os.path.isdir(p),
-            "files": os.listdir(p) if os.path.isdir(p) else [],
-        }
+    # List HF cache contents (shows whether model was pre-downloaded)
+    hf_cache_files = []
+    for root, dirs, files in os.walk(hf_home):
+        for f in files:
+            rel = os.path.relpath(os.path.join(root, f), hf_home)
+            hf_cache_files.append(rel)
+    hf_cache_files = hf_cache_files[:30]  # cap output
 
     try:
         import transformers
@@ -153,14 +146,13 @@ async def debug_ai():
         torch_ok = f"MISSING: {e}"
 
     return {
-        "cwd": cwd,
-        "file_dir": file_dir,
         "HF_MODEL_ID": hf_model_id,
-        "HF_MODEL_ID_clean": hf_model_id.strip(),
-        "HF_MODEL_ID_len": len(hf_model_id),
-        "candidate_paths": path_checks,
+        "HF_HOME": hf_home,
+        "hf_cache_files": hf_cache_files,
+        "hf_cache_file_count": len(hf_cache_files),
         "transformers": transformers_ok,
         "torch": torch_ok,
+        "cwd": os.getcwd(),
         "sys_path_top5": sys.path[:5],
     }
 
