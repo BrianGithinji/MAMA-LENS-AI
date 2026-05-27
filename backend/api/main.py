@@ -30,8 +30,9 @@ async def _ensure_db():
 
 
 async def _ensure_model():
-    """Download + cache the MAMA flan-t5 model in a background thread at startup."""
+    """Load the MAMA model in a background thread after a delay so DB init and health checks complete first."""
     import asyncio
+    await asyncio.sleep(15)  # let DB init + Render health check pass before consuming RAM
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _load_model_sync)
 

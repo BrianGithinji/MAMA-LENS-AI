@@ -960,12 +960,16 @@ class ConversationalAI:
         return self._local_model_available
 
     def _load_hf_model(self) -> None:
-        """Load tokenizer + model from HF cache."""
+        """Load tokenizer + model in float16 to stay within 512MB RAM."""
+        import torch
         from transformers import AutoTokenizer, T5ForConditionalGeneration
         logger.info("Loading MAMA model: %s (cache: %s)", _HF_MODEL_ID, _HF_CACHE_DIR)
         self._tokenizer = AutoTokenizer.from_pretrained(_HF_MODEL_ID, cache_dir=_HF_CACHE_DIR)
         self._hf_model = T5ForConditionalGeneration.from_pretrained(
-            _HF_MODEL_ID, cache_dir=_HF_CACHE_DIR, low_cpu_mem_usage=True
+            _HF_MODEL_ID,
+            cache_dir=_HF_CACHE_DIR,
+            low_cpu_mem_usage=True,
+            torch_dtype=torch.float16,
         )
         self._hf_model.eval()
         logger.info("MAMA model loaded")
