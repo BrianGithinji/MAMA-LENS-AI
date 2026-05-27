@@ -960,13 +960,13 @@ class ConversationalAI:
         return self._local_model_available
 
     def _load_hf_model(self) -> None:
-        """Load tokenizer + model from HF cache (pre-downloaded at build time)."""
-        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-        model_id = _HF_MODEL_ID  # BrianGithinji/mama-flan-t5
-        cache_dir = _HF_CACHE_DIR
-        logger.info("Loading MAMA model: %s (cache: %s)", model_id, cache_dir)
-        self._tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir)
-        self._hf_model = AutoModelForSeq2SeqLM.from_pretrained(model_id, cache_dir=cache_dir)
+        """Load tokenizer + model from HF cache."""
+        from transformers import AutoTokenizer, T5ForConditionalGeneration
+        logger.info("Loading MAMA model: %s (cache: %s)", _HF_MODEL_ID, _HF_CACHE_DIR)
+        self._tokenizer = AutoTokenizer.from_pretrained(_HF_MODEL_ID, cache_dir=_HF_CACHE_DIR)
+        self._hf_model = T5ForConditionalGeneration.from_pretrained(
+            _HF_MODEL_ID, cache_dir=_HF_CACHE_DIR, low_cpu_mem_usage=True
+        )
         self._hf_model.eval()
         logger.info("MAMA model loaded")
 
@@ -1104,7 +1104,7 @@ class ConversationalAI:
         max_tokens = 100 if channel in ("sms", "ussd") else 300
 
         if use_inline:
-            # Inline generation using HF cache (pre-downloaded at build time)
+            # Inline generation using HF cache
             import torch
             if not hasattr(self, "_hf_model") or self._hf_model is None:
                 self._load_hf_model()

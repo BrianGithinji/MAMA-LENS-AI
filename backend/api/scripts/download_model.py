@@ -7,11 +7,13 @@ cache_dir = os.environ.get("HF_HOME", "/tmp/hf_cache")
 print(f"Downloading {model_id} -> {cache_dir}", flush=True)
 
 try:
-    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    from transformers import AutoTokenizer, T5ForConditionalGeneration
     AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir)
-    AutoModelForSeq2SeqLM.from_pretrained(model_id, cache_dir=cache_dir)
+    T5ForConditionalGeneration.from_pretrained(
+        model_id, cache_dir=cache_dir, low_cpu_mem_usage=True
+    )
     print("MAMA model cached successfully.", flush=True)
 except Exception as e:
     print(f"WARNING: model download failed: {e}", flush=True)
     print("Server will use rule-based fallback on first request.", flush=True)
-    sys.exit(0)  # Don't fail the build — fallback is available
+    sys.exit(0)
