@@ -962,6 +962,7 @@ class ConversationalAI:
     def _load_hf_model(self) -> None:
         """Load tokenizer + model in float16 to stay within 512MB RAM."""
         import torch
+        torch.set_num_threads(1)  # reduce memory overhead on CPU
         from transformers import AutoTokenizer, T5ForConditionalGeneration
         logger.info("Loading MAMA model: %s (cache: %s)", _HF_MODEL_ID, _HF_CACHE_DIR)
         self._tokenizer = AutoTokenizer.from_pretrained(_HF_MODEL_ID, cache_dir=_HF_CACHE_DIR)

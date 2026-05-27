@@ -52,7 +52,6 @@ async def lifespan(app: FastAPI):
     logger.info("MAMA-LENS AI starting", version=settings.APP_VERSION)
     import asyncio
     asyncio.create_task(_ensure_db())
-    asyncio.create_task(_ensure_model())
     yield
     try:
         from app.core.database import close_db
