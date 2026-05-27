@@ -1,4 +1,3 @@
-import time
 from contextlib import asynccontextmanager
 
 import structlog
@@ -27,24 +26,6 @@ async def _ensure_db():
         logger.info("MongoDB ready")
     except Exception as e:
         logger.error("MongoDB init failed", error=str(e))
-
-
-async def _ensure_model():
-    """Load the MAMA model in a background thread after a delay so DB init and health checks complete first."""
-    import asyncio
-    await asyncio.sleep(15)  # let DB init + Render health check pass before consuming RAM
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _load_model_sync)
-
-
-def _load_model_sync():
-    try:
-        from app.api.v1.endpoints.ai_avatar import _ai, _AI_AVAILABLE
-        if _AI_AVAILABLE and _ai is not None:
-            _ai._load_hf_model()
-            logger.info("MAMA model ready")
-    except Exception as e:
-        logger.warning("Model preload failed (rule-based fallback active)", error=str(e))
 
 
 @asynccontextmanager

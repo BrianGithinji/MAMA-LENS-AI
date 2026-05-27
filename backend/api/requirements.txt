@@ -22,13 +22,8 @@ pydantic-settings==2.9.1
 email-validator==2.1.1
 
 # ─── AI / ML ─────────────────────────────────────────────────────────────────
-# Local fine-tuned model: google/flan-t5-base (Africa-first, offline-capable)
-transformers==4.51.3
-torch==2.3.1
-sentencepiece==0.2.0
-protobuf>=3.20.0
-accelerator>=0.30.0
-datasets>=2.19.0
+# Model inference via HuggingFace Inference API (BrianGithinji/mama-flan-t5)
+# torch/transformers not needed at runtime — called remotely
 numpy==1.26.4
 scikit-learn==1.5.0
 Pillow==10.3.0
