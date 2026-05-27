@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 _HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
 _HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
+_HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
+_HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{_HF_MODEL_ID}"
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -946,35 +948,6 @@ class ConversationalAI:
     # Response generation
     # ------------------------------------------------------------------
 
-    def _check_local_model(self) -> bool:
-        """Return True if the model is loaded and ready."""
-        if hasattr(self, "_hf_model") and self._hf_model is not None:
-            return True
-        if not self._local_model_checked:
-            try:
-                import transformers, torch  # noqa
-                self._local_model_available = True
-            except Exception:
-                self._local_model_available = False
-            self._local_model_checked = True
-        return self._local_model_available
-
-    def _load_hf_model(self) -> None:
-        """Load tokenizer + model in float16 to stay within 512MB RAM."""
-        import torch
-        torch.set_num_threads(1)  # reduce memory overhead on CPU
-        from transformers import AutoTokenizer, T5ForConditionalGeneration
-        logger.info("Loading MAMA model: %s (cache: %s)", _HF_MODEL_ID, _HF_CACHE_DIR)
-        self._tokenizer = AutoTokenizer.from_pretrained(_HF_MODEL_ID, cache_dir=_HF_CACHE_DIR)
-        self._hf_model = T5ForConditionalGeneration.from_pretrained(
-            _HF_MODEL_ID,
-            cache_dir=_HF_CACHE_DIR,
-            low_cpu_mem_usage=True,
-            torch_dtype=torch.float16,
-        )
-        self._hf_model.eval()
-        logger.info("MAMA model loaded")
-
     def _generate_response(
         self,
         ctx: ConversationContext,
@@ -984,70 +957,18 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Generate response: local flan-t5 model → rule-based fallback."""
-        if self._check_local_model():
-            try:
-                return self._local_model_response(
-                    ctx, user_message, language, literacy_level, channel
-                )
-            except Exception as exc:
-                logger.warning("Local model failed: %s. Using rule-based fallback.", exc)
+        """Generate response via HF Inference API (fine-tuned model, zero local RAM)."""
+        try:
+            return self._hf_api_response(ctx, user_message, language, literacy_level, channel)
+        except Exception as exc:
+            logger.warning("HF Inference API failed: %s. Using rule-based fallback.", exc)
         return self._rule_based_response(intent, language, literacy_level, ctx, user_message), 0.70
 
-    # Translation pipeline for low-resource languages
-    _TRANSLATE_LANGS = {"maa", "luo", "kik", "sw", "fr", "ar"}
+    def _check_local_model(self) -> bool:
+        """Returns True if HF API token is configured."""
+        return bool(_HF_API_TOKEN)
 
-    def _translate_to_english(self, text: str, language: str) -> str:
-        """Translate low-resource language input to English."""
-        try:
-            if language == "maa":
-                from maasai_translator import maasai_to_english
-                return maasai_to_english(text)
-            elif language == "luo":
-                from luo_translator import luo_to_english
-                return luo_to_english(text)
-            elif language == "kik":
-                from kikuyu_translator import kikuyu_to_english
-                return kikuyu_to_english(text)
-            elif language == "sw":
-                from swahili_translator import swahili_to_english
-                return swahili_to_english(text)
-            elif language == "fr":
-                from french_translator import french_to_english
-                return french_to_english(text)
-            elif language == "ar":
-                from arabic_translator import arabic_to_english
-                return arabic_to_english(text)
-        except Exception as e:
-            logger.warning("Translation to English failed (%s): %s", language, e)
-        return text
-
-    def _translate_from_english(self, text: str, language: str) -> str:
-        """Translate English model response back to target language."""
-        try:
-            if language == "maa":
-                from maasai_translator import english_to_maasai
-                return english_to_maasai(text)
-            elif language == "luo":
-                from luo_translator import english_to_luo
-                return english_to_luo(text)
-            elif language == "kik":
-                from kikuyu_translator import english_to_kikuyu
-                return english_to_kikuyu(text)
-            elif language == "sw":
-                from swahili_translator import english_to_swahili
-                return english_to_swahili(text)
-            elif language == "fr":
-                from french_translator import english_to_french
-                return english_to_french(text)
-            elif language == "ar":
-                from arabic_translator import english_to_arabic
-                return english_to_arabic(text)
-        except Exception as e:
-            logger.warning("Translation from English failed (%s): %s", language, e)
-        return text
-
-    def _local_model_response(
+    def _hf_api_response(
         self,
         ctx: ConversationContext,
         user_message: str,
@@ -1055,38 +976,16 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Call the fine-tuned flan-t5 model with conversation history."""
-        import sys, os
+        """Call BrianGithinji/mama-flan-t5 via HuggingFace Inference API."""
+        import urllib.request, json as _json
 
-        # On Render: inference.py lives in ai/mama_model which is NOT copied into
-        # the Docker image (rootDir=backend/api). So we inline the generate logic
-        # here using the HF_MODEL_ID env var directly.
-        hf_model_id = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
-        cache_dir = os.environ.get("HF_HOME", "/tmp/hf_cache")
-
-        # Try importing from local inference.py first (dev), else use inline logic
-        try:
-            candidate_paths = [
-                os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "ai", "mama_model")),
-                os.path.normpath(os.path.join(os.getcwd(), "ai", "mama_model")),
-                "/opt/render/project/src/ai/mama_model",
-            ]
-            for p in candidate_paths:
-                if os.path.isdir(p) and p not in sys.path:
-                    sys.path.insert(0, p)
-                    break
-            from inference import generate  # type: ignore
-            use_inline = False
-        except ImportError:
-            use_inline = True
-
-        # Build context-aware prompt
-        context_parts = []
+        # Build context-aware prompt (same as before)
         history = ctx.get_recent_messages(4)
         history = history[:-1] if history and history[-1]["role"] == "user" else history
-        for turn in history:
-            role_label = "Patient" if turn["role"] == "user" else "MAMA"
-            context_parts.append(f"{role_label}: {turn['content']}")
+        context_parts = [
+            f"{'Patient' if m['role'] == 'user' else 'MAMA'}: {m['content']}"
+            for m in history
+        ]
 
         query = user_message
         if language in self._TRANSLATE_LANGS:
@@ -1108,60 +1007,39 @@ class ConversationalAI:
         )
         max_tokens = 100 if channel in ("sms", "ussd") else 300
 
-        if use_inline:
-            # Inline generation using HF cache
-            import torch
-            if not hasattr(self, "_hf_model") or self._hf_model is None:
-                self._load_hf_model()
+        payload = _json.dumps({
+            "inputs": full_prompt,
+            "parameters": {
+                "max_new_tokens": max_tokens,
+                "num_beams": 4,
+                "temperature": 0.7,
+                "do_sample": True,
+                "no_repeat_ngram_size": 3,
+            },
+            "options": {"wait_for_model": True},
+        }).encode()
 
-            inputs = self._tokenizer(full_prompt, return_tensors="pt", max_length=512, truncation=True)
-            with torch.no_grad():
-                outputs = self._hf_model.generate(
-                    **inputs, max_new_tokens=max_tokens, num_beams=4,
-                    temperature=0.7, do_sample=True, early_stopping=True, no_repeat_ngram_size=3,
-                )
-            response = self._tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
-        else:
-            response = generate(prompt, max_new_tokens=max_tokens, conversation_history=history)
+        req = urllib.request.Request(
+            _HF_INFERENCE_URL,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {_HF_API_TOKEN}",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = _json.loads(resp.read())
+
+        # HF returns [{"generated_text": "..."}]
+        response = result[0]["generated_text"].strip() if result else ""
 
         if language in self._TRANSLATE_LANGS:
             response = self._translate_from_english(response, language)
 
         return response, 0.85
 
-        # For low-resource languages: translate input → English, run model, translate back
-        inference_lang = language
-        query = user_message
-        if language in self._TRANSLATE_LANGS:
-            query = self._translate_to_english(user_message, language)
-            inference_lang = "en"
-            logger.info("Translated %s→en: %s", language, query)
-
-        # Build hint suffix
-        hints = []
-        if ctx.gestational_age_weeks:
-            hints.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
-        if literacy_level == "low":
-            hints.append("(Use very simple language)")
-        if channel in ("sms", "ussd"):
-            hints.append("(Keep response under 160 characters)")
-
-        prompt = query + (" " + " ".join(hints) if hints else "")
-        max_tokens = 100 if channel in ("sms", "ussd") else 300
-
-        # Pass last 4 turns of conversation history for context
-        history = ctx.get_recent_messages(4)
-        # Exclude the message we just added (last item is current user message)
-        history = history[:-1] if history and history[-1]["role"] == "user" else history
-
-        response = generate(prompt, max_new_tokens=max_tokens, conversation_history=history)
-
-        # Translate response back to target language
-        if language in self._TRANSLATE_LANGS:
-            response = self._translate_from_english(response, language)
-            logger.info("Translated en→%s response", language)
-
-        return response, 0.85
+    # Translation pipeline for low-resource languages
+    _TRANSLATE_LANGS = {"maa", "luo", "kik", "sw", "fr", "ar"}
 
     def _rule_based_response(
         self, intent: Intent, language: str, literacy_level: str,
