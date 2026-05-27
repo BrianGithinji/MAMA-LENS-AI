@@ -968,6 +968,34 @@ class ConversationalAI:
         """Returns True if HF API token is configured."""
         return bool(_HF_API_TOKEN)
 
+    def _build_prompt(self, ctx: ConversationContext, user_message: str,
+                      language: str, literacy_level: str, channel: str) -> Tuple[str, int]:
+        """Build the full prompt string and return (prompt, max_tokens)."""
+        history = ctx.get_recent_messages(4)
+        history = history[:-1] if history and history[-1]["role"] == "user" else history
+        context_parts = [
+            f"{'Patient' if m['role'] == 'user' else 'MAMA'}: {m['content']}"
+            for m in history
+        ]
+        query = user_message
+        if language in self._TRANSLATE_LANGS:
+            query = self._translate_to_english(user_message, language)
+        hints = []
+        if ctx.gestational_age_weeks:
+            hints.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
+        if literacy_level == "low":
+            hints.append("(Use very simple language)")
+        if channel in ("sms", "ussd"):
+            hints.append("(Keep response under 160 characters)")
+        prompt = query + (" " + " ".join(hints) if hints else "")
+        context_str = "\n".join(context_parts)
+        full_prompt = (
+            f"maternal health conversation:\n{context_str}\nPatient: {prompt}\nMAMA:"
+            if context_str else f"maternal health: {prompt}"
+        )
+        max_tokens = 100 if channel in ("sms", "ussd") else 300
+        return full_prompt, max_tokens
+
     def _hf_api_response(
         self,
         ctx: ConversationContext,
@@ -976,52 +1004,42 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Call BrianGithinji/mama-flan-t5 via huggingface_hub InferenceClient."""
-        from huggingface_hub import InferenceClient
+        """POST to HF inference via httpx, connecting to huggingface.co IP
+        with api-inference Host header (bypasses blocked subdomain DNS on Render)."""
+        import httpx, socket
 
-        history = ctx.get_recent_messages(4)
-        history = history[:-1] if history and history[-1]["role"] == "user" else history
-        context_parts = [
-            f"{'Patient' if m['role'] == 'user' else 'MAMA'}: {m['content']}"
-            for m in history
-        ]
+        full_prompt, max_tokens = self._build_prompt(ctx, user_message, language, literacy_level, channel)
 
-        query = user_message
-        if language in self._TRANSLATE_LANGS:
-            query = self._translate_to_english(user_message, language)
+        payload = {
+            "inputs": full_prompt,
+            "parameters": {
+                "max_new_tokens": max_tokens,
+                "temperature": 0.7,
+                "do_sample": True,
+                "repetition_penalty": 1.3,
+                "return_full_text": False,
+            },
+            "options": {"wait_for_model": True, "use_cache": False},
+        }
 
-        hints = []
-        if ctx.gestational_age_weeks:
-            hints.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
-        if literacy_level == "low":
-            hints.append("(Use very simple language)")
-        if channel in ("sms", "ussd"):
-            hints.append("(Keep response under 160 characters)")
+        # huggingface.co resolves fine; use its IP to reach api-inference endpoint
+        hf_ip = socket.getaddrinfo("huggingface.co", 443, socket.AF_INET)[0][4][0]
+        with httpx.Client(timeout=60, verify=False) as client:
+            resp = client.post(
+                f"https://{hf_ip}/models/{_HF_MODEL_ID}",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {_HF_API_TOKEN}",
+                    "Host": "api-inference.huggingface.co",
+                    "Content-Type": "application/json",
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
 
-        prompt = query + (" " + " ".join(hints) if hints else "")
-        context_str = "\n".join(context_parts)
-        full_prompt = (
-            f"maternal health conversation:\n{context_str}\nPatient: {prompt}\nMAMA:"
-            if context_str else f"maternal health: {prompt}"
-        )
-        max_tokens = 100 if channel in ("sms", "ussd") else 300
-
-        client = InferenceClient(model=_HF_MODEL_ID, token=_HF_API_TOKEN, timeout=60)
-        response = client.text_generation(
-            full_prompt,
-            max_new_tokens=max_tokens,
-            temperature=0.7,
-            do_sample=True,
-            repetition_penalty=1.3,
-            stream=False,
-        )
-        if not isinstance(response, str):
-            response = "".join(response)
-        response = response.strip()
-
+        response = (result[0].get("generated_text") or "").strip() if result else ""
         if language in self._TRANSLATE_LANGS:
             response = self._translate_from_english(response, language)
-
         return response, 0.85
 
     # Translation pipeline for low-resource languages
