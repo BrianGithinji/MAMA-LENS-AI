@@ -1237,16 +1237,21 @@ class ConversationalAI:
         return response
 
     def _symptom_response(self, ctx: Optional[ConversationContext], user_message: str, language: str) -> str:
-        """Context-aware symptom response — escalates if user says symptoms are worsening."""
-        msg_lower = user_message.lower()
-        WORSENING = {"worse", "worst", "bad", "very bad", "terrible", "severe",
-                     "getting worse", "still", "yes", "yeah", "ndiyo", "zaidi", "bado", "mbaya"}
-        is_worsening = any(w in msg_lower for w in WORSENING)
+        """Context-aware symptom response — escalates only if user explicitly confirms worsening."""
+        msg_lower = user_message.lower().strip()
 
-        # Check if previous turn was already a symptom check (follow-up)
+        # Only escalate on explicit worsening confirmation — not time words like 'yesterday'
+        WORSENING = {"worse", "worst", "getting worse", "very bad", "terrible",
+                     "severe", "yes", "yeah", "ndiyo", "zaidi", "mbaya sana"}
+        is_worsening = any(w == msg_lower or msg_lower.startswith(w + " ") or msg_lower.endswith(" " + w)
+                           for w in WORSENING)
+
+        # is_followup: previous assistant turn was a symptom_check AND user gave a short reply
+        # Use [-3] because at call time ctx.messages already has: [..., user_prev, assistant, user_current]
         is_followup = (
             ctx is not None
-            and len(ctx.messages) >= 2
+            and len(ctx.messages) >= 3
+            and ctx.messages[-2].role == "assistant"
             and ctx.messages[-2].intent == Intent.SYMPTOM_CHECK.value
         )
 
