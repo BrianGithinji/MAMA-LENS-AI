@@ -32,10 +32,12 @@ apps/web/.vite/
 *.log
 npm-debug.log*
 
-# ─── AI Models (large binary files) ─────────────────────────
-ai/*/models/*.joblib
-ai/*/models/*.pkl
-ai/*/models/*.h5
+# ─── AI Models (large binary files — generated at runtime) ──
+*.joblib
+*.pkl
+*.h5
+*.pt
+*.pth
 
 # ─── Fine-tuned model weights (too large for git) ────────────
 ai/mama_model/mama-flan-t5/
