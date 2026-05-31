@@ -14,34 +14,8 @@ _db_ready = False
 
 
 async def _preload_model():
-    """Warm up the HF Inference API connection at startup."""
-    import os
-    token = os.environ.get("HF_API_TOKEN", "").strip()
-    model_id = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
-    if not token:
-        logger.info("HF_API_TOKEN not set — skipping model warm-up")
-        return
-    # Delay to allow Render's network stack to fully initialise
-    import asyncio
-    await asyncio.sleep(5)
-    try:
-        import httpx, socket
-        hf_ip = await asyncio.get_event_loop().run_in_executor(
-            None,
-            lambda: socket.getaddrinfo("huggingface.co", 443, socket.AF_INET)[0][4][0]
-        )
-        async with httpx.AsyncClient(timeout=30, verify=False) as client:
-            await client.post(
-                f"https://{hf_ip}/models/{model_id}",
-                json={"inputs": "hello", "options": {"wait_for_model": True}},
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Host": "api-inference.huggingface.co",
-                },
-            )
-        logger.info("HF Inference API warmed up", model=model_id)
-    except Exception as e:
-        logger.warning("Model warm-up skipped", error=str(e))
+    """No-op: HF Inference API is called on demand per request."""
+    logger.info("AI engine ready (HF Inference API, on-demand)")
 
 
 async def _ensure_db():
