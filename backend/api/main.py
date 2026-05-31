@@ -14,22 +14,23 @@ _db_ready = False
 
 
 async def _preload_model():
-    """Download and load the fine-tuned MAMA model at startup so first request is fast."""
+    """Warm up the HF Inference API connection at startup."""
     try:
-        import sys, os
-        ai_path = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "ai", "mama_model")
-        )
-        if ai_path not in sys.path:
-            sys.path.insert(0, ai_path)
-        from inference import _load_model  # type: ignore
-        import asyncio
-        # Run blocking model load in thread pool so it doesn't block the event loop
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, _load_model)
-        logger.info("MAMA fine-tuned model preloaded successfully")
+        import os, httpx
+        token = os.environ.get("HF_API_TOKEN", "").strip()
+        model_id = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
+        if not token:
+            logger.info("HF_API_TOKEN not set — skipping model warm-up")
+            return
+        async with httpx.AsyncClient(timeout=30) as client:
+            await client.post(
+                f"https://api-inference.huggingface.co/models/{model_id}",
+                json={"inputs": "hello", "options": {"wait_for_model": True}},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        logger.info("HF Inference API warmed up", model=model_id)
     except Exception as e:
-        logger.warning("Model preload failed (will load on first request)", error=str(e))
+        logger.warning("Model warm-up skipped", error=str(e))
 
 
 async def _ensure_db():
