@@ -984,8 +984,6 @@ class ConversationalAI:
             for m in history
         ]
         query = user_message
-        if language in self._TRANSLATE_LANGS:
-            query = self._translate_to_english(user_message, language)
         hints = []
         if ctx.gestational_age_weeks:
             hints.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
@@ -1010,9 +1008,8 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """POST to HF inference via httpx, connecting to huggingface.co IP
-        with api-inference Host header (bypasses blocked subdomain DNS on Render)."""
-        import httpx, socket
+        """POST to HF Inference API via standard HTTPS."""
+        import httpx
 
         full_prompt, max_tokens = self._build_prompt(ctx, user_message, language, literacy_level, channel)
 
@@ -1028,15 +1025,12 @@ class ConversationalAI:
             "options": {"wait_for_model": True, "use_cache": False},
         }
 
-        # huggingface.co resolves fine; use its IP to reach api-inference endpoint
-        hf_ip = socket.getaddrinfo("huggingface.co", 443, socket.AF_INET)[0][4][0]
-        with httpx.Client(timeout=60, verify=False) as client:
+        with httpx.Client(timeout=60) as client:
             resp = client.post(
-                f"https://{hf_ip}/models/{_HF_MODEL_ID}",
+                f"https://api-inference.huggingface.co/models/{_HF_MODEL_ID}",
                 json=payload,
                 headers={
                     "Authorization": f"Bearer {_HF_API_TOKEN}",
-                    "Host": "api-inference.huggingface.co",
                     "Content-Type": "application/json",
                 },
             )
@@ -1044,12 +1038,10 @@ class ConversationalAI:
             result = resp.json()
 
         response = (result[0].get("generated_text") or "").strip() if result else ""
-        if language in self._TRANSLATE_LANGS:
-            response = self._translate_from_english(response, language)
         return response, 0.85
 
-    # Translation pipeline for low-resource languages
-    _TRANSLATE_LANGS = {"maa", "luo", "kik", "sw", "fr", "ar"}
+    # Languages passed directly to the model (no translation needed — model is multilingual)
+    _TRANSLATE_LANGS: set = set()
 
     def _rule_based_response(
         self, intent: Intent, language: str, literacy_level: str,
