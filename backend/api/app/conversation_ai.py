@@ -1027,7 +1027,7 @@ class ConversationalAI:
 
         with httpx.Client(timeout=60) as client:
             resp = client.post(
-                f"https://router.huggingface.co/hf-inference/models/{_HF_MODEL_ID}",
+                f"https://router.huggingface.co/hf-inference/models/{_HF_MODEL_ID}/v1/text-generation",
                 json=payload,
                 headers={
                     "Authorization": f"Bearer {_HF_API_TOKEN}",
