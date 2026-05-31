@@ -1010,9 +1010,9 @@ class ConversationalAI:
     ) -> Tuple[str, float]:
         """POST to HF Inference API.
         api-inference.huggingface.co DNS fails on Render free tier.
-        Workaround: resolve huggingface.co IP, connect with correct SNI via ssl server_hostname.
+        Workaround: resolve via huggingface.co IP, set SNI via extensions.
         """
-        import httpx, socket, ssl
+        import httpx, socket
 
         full_prompt, max_tokens = self._build_prompt(ctx, user_message, language, literacy_level, channel)
 
@@ -1028,14 +1028,8 @@ class ConversationalAI:
             "options": {"wait_for_model": True, "use_cache": False},
         }
 
-        # Resolve via huggingface.co (works on Render), then connect with correct SNI
         hf_ip = socket.getaddrinfo("huggingface.co", 443, socket.AF_INET)[0][4][0]
-        ssl_ctx = ssl.create_default_context()
-        transport = httpx.HTTPTransport(
-            ssl=ssl_ctx,
-            local_address=None,
-        )
-        with httpx.Client(timeout=60, transport=transport) as client:
+        with httpx.Client(timeout=60, verify=True) as client:
             resp = client.post(
                 f"https://{hf_ip}/models/{_HF_MODEL_ID}",
                 json=payload,
