@@ -140,10 +140,11 @@ INTENT_PATTERNS: Dict[str, List[str]] = {
         r"\b(feeling|symptom|pain|ache|nausea|vomiting|swelling|headache)\b",
         r"\b(dizzy|faint|tired|fatigue|cramp|discharge|spotting|fever)\b",
         r"\b(is\s+it\s+normal|should\s+i\s+worry|what\s+does\s+it\s+mean)\b",
-        # Kiswahili
-        r"\b(ninajisikia|dalili|maumivu|kichefuchefu|kutapika|uvimbe|homa)\b",
+        # Kiswahili — ninajisikia removed (too generic, causes false positives with emotional intent)
+        r"\b(dalili|maumivu|kichefuchefu|kutapika|uvimbe|homa)\b",
         r"\b(kizunguzungu|uchovu|tumbo\s+kuuma|kutokwa|madoa|ni\s+kawaida)\b",
         r"\b(ninaumwa|kuna\s+tatizo|sijisikii\s+vizuri|mwili\s+wangu)\b",
+        r"\b(ninajisikia\s+(maumivu|vibaya|kizunguzungu|uchovu|homa|uvimbe))\b",
     ],
     Intent.APPOINTMENT_BOOKING: [
         # English
@@ -171,9 +172,11 @@ INTENT_PATTERNS: Dict[str, List[str]] = {
         r"\b(support|talk|listen|help\s+me\s+feel|not\s+okay)\b",
         # Kiswahili
         r"\b(huzuni|wasiwasi|hofu|msongo|upweke|nimechoka|ninalia)\b",
-        r"\b(sijisikii\s+vizuri|siwezi\s+kukabiliana|msaada|zungumza\s+nami)\b",
+        r"\b(sijisikii\s+vizuri|siwezi\s+kukabiliana|zungumza\s+nami)\b",
         r"\b(nimepoteza\s+mtoto|kuharibika\s+kwa\s+mimba|huzuni\s+yangu)\b",
         r"\b(ninajisikia\s+peke\s+yangu|hakuna\s+anayenielewa|nimechoshwa)\b",
+        # ninajisikia + emotional word = emotional support
+        r"\b(ninajisikia\s+(huzuni|wasiwasi|hofu|vibaya\s+sana|peke|upweke|msongo))\b",
     ],
     Intent.EDUCATION_REQUEST: [
         # English
@@ -197,10 +200,13 @@ INTENT_PATTERNS: Dict[str, List[str]] = {
         # English
         r"\b(baby\s+moving|kick|movement|fetal\s+movement|not\s+kicking)\b",
         r"\b(kick\s+count|baby\s+active|baby\s+quiet|no\s+movement)\b",
-        # Kiswahili
-        r"\b(mtoto\s+anasogea|mateke|mwendo\s+wa\s+mtoto|mtoto\s+hasogei)\b",
+        # Kiswahili — split patterns so intervening words (wangu, yangu) don't break match
+        r"\b(mtoto\s+anasogea|mateke|mwendo\s+wa\s+mtoto)\b",
         r"\b(kuhesabu\s+mateke|mtoto\s+ana\s+nguvu|mtoto\s+kimya|hakuna\s+mwendo)\b",
         r"\b(mtoto\s+wangu\s+anacheza|mtoto\s+amekimya\s+sana)\b",
+        # hasogei / hasogei can appear with possessives between mtoto and verb
+        r"\bhasogei\b",
+        r"\b(mtoto\s+wangu\s+hasogei|mtoto\s+yangu\s+hasogei)\b",
     ],
     Intent.LABOR_SIGNS: [
         # English
@@ -281,7 +287,7 @@ EMERGENCY_KEYWORDS = {
         # Pain
         "maumivu makali", "maumivu ya tumbo", "maumivu ya kichwa makali",
         # Fetal
-        "mtoto hasogei", "mtoto haonekani kusogea", "hakuna mwendo wa mtoto",
+        "mtoto hasogei", "mtoto haonekani kusogea", "hakuna mwendo wa mtoto", "hasogei",
         # Emergency
         "dharura", "msaada wa haraka", "nenda hospitali", "piga simu 999",
         # Breathing
