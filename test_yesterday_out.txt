@@ -1,0 +1,10 @@
+Logged in OK
+
+User  : I have a headache
+Traceback (most recent call last):
+  File "d:\MAMA-LENS AI\SYSTEM\test_yesterday.py", line 31, in <module>
+    print(f"MAMA  : {resp[:200]}")
+  File "C:\Users\brian\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 160-161: character maps to <undefined>

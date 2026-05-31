@@ -162,14 +162,10 @@ def finetune(epochs: int = 3, output_dir: Path = DEFAULT_OUTPUT) -> None:
         processing_class=tokenizer,
     )
 
-    # Resume from latest checkpoint if one exists
-    checkpoints = sorted(output_dir.glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[1]))
-    resume = str(checkpoints[-1]) if checkpoints else None
-    if resume:
-        logger.info("Resuming from checkpoint: %s", resume)
     logger.info("Starting fine-tuning for %d epochs...", epochs)
-    trainer.train(resume_from_checkpoint=resume)
+    trainer.train()
 
+    model.config.tie_word_embeddings = False
     model.save_pretrained(str(output_dir))
     tokenizer.save_pretrained(str(output_dir))
     logger.info("Model saved to: %s", output_dir)

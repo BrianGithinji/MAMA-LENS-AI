@@ -1,0 +1,9 @@
+.venv311/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db
+dl_out.txt
+test_register.json
+Dockerfile.spaces
