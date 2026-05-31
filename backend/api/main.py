@@ -13,6 +13,25 @@ logger = structlog.get_logger(__name__)
 _db_ready = False
 
 
+async def _preload_model():
+    """Download and load the fine-tuned MAMA model at startup so first request is fast."""
+    try:
+        import sys, os
+        ai_path = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "ai", "mama_model")
+        )
+        if ai_path not in sys.path:
+            sys.path.insert(0, ai_path)
+        from inference import _load_model  # type: ignore
+        import asyncio
+        # Run blocking model load in thread pool so it doesn't block the event loop
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _load_model)
+        logger.info("MAMA fine-tuned model preloaded successfully")
+    except Exception as e:
+        logger.warning("Model preload failed (will load on first request)", error=str(e))
+
+
 async def _ensure_db():
     global _db_ready
     if _db_ready:
@@ -33,6 +52,8 @@ async def lifespan(app: FastAPI):
     logger.info("MAMA-LENS AI starting", version=settings.APP_VERSION)
     import asyncio
     asyncio.create_task(_ensure_db())
+    # Preload the fine-tuned model in background so first chat request is fast
+    asyncio.create_task(_preload_model())
     yield
     try:
         from app.core.database import close_db
