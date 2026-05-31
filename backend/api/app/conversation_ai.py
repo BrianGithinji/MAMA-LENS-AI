@@ -1008,16 +1008,12 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """POST to HF Inference API.
-        api-inference.huggingface.co DNS fails on Render free tier.
-        Workaround: open a raw SSL socket to huggingface.co IP with correct SNI,
-        then send HTTP/1.1 request manually.
-        """
-        import socket, ssl, json as _json
+        """POST to HF Inference via router.huggingface.co (resolves on Render free tier)."""
+        import httpx
 
         full_prompt, max_tokens = self._build_prompt(ctx, user_message, language, literacy_level, channel)
 
-        payload = _json.dumps({
+        payload = {
             "inputs": full_prompt,
             "parameters": {
                 "max_new_tokens": max_tokens,
@@ -1027,38 +1023,20 @@ class ConversationalAI:
                 "return_full_text": False,
             },
             "options": {"wait_for_model": True, "use_cache": False},
-        }).encode()
+        }
 
-        host = "api-inference.huggingface.co"
-        path = f"/models/{_HF_MODEL_ID}"
-        hf_ip = socket.getaddrinfo("huggingface.co", 443, socket.AF_INET)[0][4][0]
+        with httpx.Client(timeout=60) as client:
+            resp = client.post(
+                f"https://router.huggingface.co/hf-inference/models/{_HF_MODEL_ID}",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {_HF_API_TOKEN}",
+                    "Content-Type": "application/json",
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
 
-        ctx_ssl = ssl.create_default_context()
-        with socket.create_connection((hf_ip, 443), timeout=60) as raw:
-            with ctx_ssl.wrap_socket(raw, server_hostname=host) as s:
-                request = (
-                    f"POST {path} HTTP/1.1\r\n"
-                    f"Host: {host}\r\n"
-                    f"Authorization: Bearer {_HF_API_TOKEN}\r\n"
-                    f"Content-Type: application/json\r\n"
-                    f"Content-Length: {len(payload)}\r\n"
-                    f"Connection: close\r\n"
-                    f"\r\n"
-                ).encode() + payload
-                s.sendall(request)
-                response_bytes = b""
-                while True:
-                    chunk = s.recv(4096)
-                    if not chunk:
-                        break
-                    response_bytes += chunk
-
-        # Parse HTTP response — split headers from body
-        header_end = response_bytes.find(b"\r\n\r\n")
-        body = response_bytes[header_end + 4:].decode("utf-8", errors="replace")
-        result = _json.loads(body)
-        if isinstance(result, dict) and "error" in result:
-            raise RuntimeError(result["error"])
         response = (result[0].get("generated_text") or "").strip() if result else ""
         return response, 0.85
 
