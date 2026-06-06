@@ -1,0 +1,49 @@
+# MAMA-LENS AI — Dependency Specifications
+#
+# This project has two separate dependency sets:
+#
+# 1. Backend API (FastAPI + MongoDB + auth + runtime ML)
+#    pip install -r backend/api/requirements.txt
+#
+# 2. AI/ML workloads (fine-tuning, risk model training, local inference)
+#    pip install -r ai/requirements-ai.txt
+#
+# See README.md for full installation instructions.
+
+# ── Backend API ───────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
+httpx==0.28.1
+motor==3.4.0
+pymongo==4.7.2
+python-jose[cryptography]==3.3.0
+bcrypt==4.0.1
+cryptography==42.0.7
+google-auth==2.29.0
+pydantic==2.11.2
+pydantic-settings==2.9.1
+email-validator==2.1.1
+numpy==1.26.4
+scikit-learn==1.5.0
+Pillow==10.3.0
+huggingface_hub>=0.23.0
+python-dotenv==1.0.1
+pytz==2024.1
+structlog==24.1.0
+
+# ── AI / ML workloads (fine-tuning + risk model training) ─────
+# Install separately — heavy dependencies not needed for API runtime
+# pip install -r ai/requirements-ai.txt
+#
+# torch==2.3.0
+# transformers==4.41.0
+# datasets==2.19.1
+# accelerate==0.30.0
+# safetensors==0.4.3
+# sentencepiece==0.2.0
+# tokenizers==0.19.1
+# pandas==2.2.2
+# xgboost==2.0.3
+# joblib==1.4.2
+# tqdm==4.66.4
