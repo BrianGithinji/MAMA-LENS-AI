@@ -64,15 +64,15 @@ async def avatar_chat(
                 from app.core.database import get_db
                 db = get_db()
                 doc = await db.conversation_sessions.find_one({"session_id": session_id})
-                if doc and doc.get("messages"):
-                    _ai._get_or_create_session(
-                        session_id,
-                        request.language,
-                        "app",
-                        "medium",
-                        request.gestational_age_weeks,
-                        db_history=doc["messages"][-20:],
-                    )
+                db_history = doc["messages"][-20:] if doc and doc.get("messages") else None
+                _ai._get_or_create_session(
+                    session_id,
+                    request.language,
+                    "app",
+                    "medium",
+                    request.gestational_age_weeks,
+                    db_history=db_history,
+                )
 
             response = _ai.chat(
                 session_id=session_id,

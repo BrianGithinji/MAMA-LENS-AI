@@ -128,16 +128,17 @@ async def health_check():
 
 @app.get("/debug/network")
 async def debug_network():
-    """Test outbound connectivity from Render to HuggingFace."""
+    """Test outbound connectivity from HF Spaces to HuggingFace inference."""
     import httpx, os
-    hf_token = os.environ.get("HF_API_TOKEN", "")
-    results = {}
-    for url in [
-        "https://huggingface.co",
-        "https://api-inference.huggingface.co",
-        "https://router.huggingface.co",
-        f"https://router.huggingface.co/hf-inference/models/BrianGithinji/mama-flan-t5/v1/text-generation",
-    ]:
+    hf_token = os.environ.get("HF_API_TOKEN", "").strip()
+    hf_model = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
+    results = {
+        "HF_API_TOKEN_set": bool(hf_token),
+        "HF_API_TOKEN_prefix": hf_token[:10] + "..." if hf_token else "EMPTY",
+        "HF_MODEL_ID": hf_model,
+    }
+    test_url = f"https://router.huggingface.co/hf-inference/models/{hf_model}"
+    for url in ["https://huggingface.co", test_url]:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
                 r = await client.get(url, headers={"Authorization": f"Bearer {hf_token}"} if hf_token else {})

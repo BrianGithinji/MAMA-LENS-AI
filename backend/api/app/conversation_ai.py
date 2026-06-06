@@ -17,10 +17,17 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+# Load .env so HF_API_TOKEN is available when this module is imported
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 _HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
 _HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
 _HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
-_HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{_HF_MODEL_ID}"
+_HF_INFERENCE_URL = f"https://router.huggingface.co/hf-inference/models/{_HF_MODEL_ID}"  # seq2seq path for HF Spaces
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -779,25 +786,19 @@ class ConversationalAI:
         return self._sessions[session_id]
 
     def _load_history_from_db(self, session_id: str) -> Optional[List[Dict]]:
-        """Load last 10 messages from MongoDB for this session."""
+        """No-op in async context — history is pre-loaded by ai_avatar.py."""
         try:
-            from app.core.database import get_db
             import asyncio
-            db = get_db()
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                # We're inside an async context — use run_coroutine_threadsafe or nest
-                import concurrent.futures
-                future = asyncio.ensure_future(
-                    db.conversation_sessions.find_one({"session_id": session_id})
-                )
-                # Can't await here (sync method) — return None and let async path handle it
-                return None
+                return None  # async context: ai_avatar.py handles pre-loading
+            from app.core.database import get_db
+            db = get_db()
             doc = loop.run_until_complete(
                 db.conversation_sessions.find_one({"session_id": session_id})
             )
             if doc and doc.get("messages"):
-                return doc["messages"][-20:]  # last 20 messages
+                return doc["messages"][-20:]
         except Exception as e:
             logger.warning("Failed to load session history: %s", e)
         return None
@@ -972,7 +973,8 @@ class ConversationalAI:
 
     def _check_local_model(self) -> bool:
         """Returns True if HF API token is configured."""
-        return bool(_HF_API_TOKEN)
+        import os
+        return bool(os.environ.get("HF_API_TOKEN", "").strip())
 
     def _build_prompt(self, ctx: ConversationContext, user_message: str,
                       language: str, literacy_level: str, channel: str) -> Tuple[str, int]:
@@ -1008,8 +1010,14 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """POST to HF Inference via router.huggingface.co (resolves on Render free tier)."""
-        import httpx
+        """POST to HF Inference via router.huggingface.co (resolves on HF Spaces)."""
+        import httpx, os
+
+        # Read token at request time — HF Spaces injects secrets after module load
+        hf_token = os.environ.get("HF_API_TOKEN", "").strip()
+        hf_model = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
+        if not hf_token:
+            raise ValueError("HF_API_TOKEN is not set")
 
         full_prompt, max_tokens = self._build_prompt(ctx, user_message, language, literacy_level, channel)
 
@@ -1025,12 +1033,16 @@ class ConversationalAI:
             "options": {"wait_for_model": True, "use_cache": False},
         }
 
+        # Use router.huggingface.co (resolves on HF Spaces)
+        # For seq2seq models use the standard inference path, not /v1/text-generation
+        url = f"https://router.huggingface.co/hf-inference/models/{hf_model}"
+
         with httpx.Client(timeout=60) as client:
             resp = client.post(
-                f"https://router.huggingface.co/hf-inference/models/{_HF_MODEL_ID}/v1/text-generation",
+                url,
                 json=payload,
                 headers={
-                    "Authorization": f"Bearer {_HF_API_TOKEN}",
+                    "Authorization": f"Bearer {hf_token}",
                     "Content-Type": "application/json",
                 },
             )
@@ -1237,20 +1249,19 @@ class ConversationalAI:
         return response
 
     def _symptom_response(self, ctx: Optional[ConversationContext], user_message: str, language: str) -> str:
-        """Context-aware symptom response — escalates only if user explicitly confirms worsening."""
+        """Context-aware symptom response — escalates on worsening, gathers info on follow-ups."""
         msg_lower = user_message.lower().strip()
 
-        # Only escalate on explicit worsening confirmation — not time words like 'yesterday'
         WORSENING = {"worse", "worst", "getting worse", "very bad", "terrible",
                      "severe", "yes", "yeah", "ndiyo", "zaidi", "mbaya sana"}
         is_worsening = any(w == msg_lower or msg_lower.startswith(w + " ") or msg_lower.endswith(" " + w)
                            for w in WORSENING)
 
-        # is_followup: previous assistant turn was a symptom_check AND user gave a short reply
-        # Use [-3] because at call time ctx.messages already has: [..., user_prev, assistant, user_current]
+        # is_followup: user is responding to a prior symptom_check assistant message
+        # At call time ctx.messages is [..., prev_assistant, current_user] — check [-2]
         is_followup = (
             ctx is not None
-            and len(ctx.messages) >= 3
+            and len(ctx.messages) >= 2
             and ctx.messages[-2].role == "assistant"
             and ctx.messages[-2].intent == Intent.SYMPTOM_CHECK.value
         )
@@ -1268,8 +1279,8 @@ class ConversationalAI:
                     "Je, una dalili nyingine yoyote kama hizi?"
                 )
             return (
-                "Since your symptoms are getting worse, I strongly recommend you visit a clinic or hospital today. \u26a0\ufe0f\n\n"
-                "Go IMMEDIATELY if you have any of:\n"
+                "Since your symptoms are getting worse, I strongly recommend visiting a clinic today. \u26a0\ufe0f\n\n"
+                "Go IMMEDIATELY if you have:\n"
                 "\u2022 Severe headache with vision changes\n"
                 "\u2022 Any vaginal bleeding\n"
                 "\u2022 No fetal movement (after 28 weeks)\n"
@@ -1277,6 +1288,21 @@ class ConversationalAI:
                 "Do you have any of these additional symptoms?"
             )
 
+        if is_followup:
+            # User gave a follow-up answer (time, context, etc.) — ask next clarifying question
+            if language == "sw":
+                return (
+                    "Asante kwa kuniambia. \U0001f49a\n\n"
+                    "Dalili zimezidi kuwa mbaya tangu zilipoanza, au zimebaki vivyo hivyo?\n\n"
+                    "Pia, uko wiki ngapi za ujauzito sasa hivi?"
+                )
+            return (
+                "Thank you for sharing that. \U0001f49a\n\n"
+                "Have the symptoms been getting worse since they started, or staying the same?\n\n"
+                "Also, how many weeks pregnant are you?"
+            )
+
+        # First mention of symptoms — ask opening questions
         if language == "sw":
             return (
                 "Nakusikia una dalili fulani. Niambie zaidi:\n\n"
