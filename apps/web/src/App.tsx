@@ -8,8 +8,6 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import VerifyOTPPage from "./pages/auth/VerifyOTPPage";
 
 import DashboardPage from "./pages/dashboard/DashboardPage";
-import RiskAssessmentPage from "./pages/risk/RiskAssessmentPage";
-import RiskResultPage from "./pages/risk/RiskResultPage";
 import PregnancyJourneyPage from "./pages/pregnancy/PregnancyJourneyPage";
 import TelemedicinePage from "./pages/telemedicine/TelemedicinePage";
 import ConsultationRoomPage from "./pages/telemedicine/ConsultationRoomPage";
@@ -52,8 +50,6 @@ export default function App() {
       >
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/risk-assessment" element={<RiskAssessmentPage />} />
-        <Route path="/risk-assessment/result/:id" element={<RiskResultPage />} />
         <Route path="/pregnancy" element={<PregnancyJourneyPage />} />
         <Route path="/telemedicine" element={<TelemedicinePage />} />
         <Route path="/telemedicine/room/:id" element={<ConsultationRoomPage />} />

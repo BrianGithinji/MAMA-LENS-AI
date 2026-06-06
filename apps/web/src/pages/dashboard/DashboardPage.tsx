@@ -3,14 +3,12 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Heart, AlertTriangle, Calendar, MessageCircle,
-  MapPin, BookOpen, Activity, Phone, Baby, Smile, Droplets,
+  MapPin, BookOpen, Activity, Phone, Smile, Droplets,
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { pregnancyAPI, riskAPI, notificationsAPI, anemiaAPI } from "../../api/client";
-import RiskLevelBadge from "../../components/ui/RiskLevelBadge";
+import { pregnancyAPI, notificationsAPI, anemiaAPI } from "../../api/client";
 import PregnancyWeekCard from "../../components/pregnancy/PregnancyWeekCard";
 import QuickActionCard from "../../components/dashboard/QuickActionCard";
-import EmergencyBanner from "../../components/emergency/EmergencyBanner";
 import Logo from "../../components/brand/Logo";
 import { useTranslation } from "react-i18next";
 
@@ -21,11 +19,6 @@ export default function DashboardPage() {
   const { data: pregnancy } = useQuery({
     queryKey: ["pregnancy", "active"],
     queryFn: () => pregnancyAPI.getActive().then((r) => r.data),
-  });
-
-  const { data: latestRisk } = useQuery({
-    queryKey: ["risk", "history"],
-    queryFn: () => riskAPI.getHistory(1).then((r) => r.data[0]),
   });
 
   const { data: latestAnemia } = useQuery({
@@ -53,14 +46,6 @@ export default function DashboardPage() {
       href: "/anemia",
       color: "bg-red-50 text-red-600",
       urgent: latestAnemia?.anemia_level === "severe" || latestAnemia?.anemia_level === "moderate",
-    },
-    {
-      icon: Activity,
-      label: t("risk_assessment"),
-      description: t("vital_signs_desc"),
-      href: "/risk-assessment",
-      color: "bg-primary-50 text-primary-600",
-      urgent: latestRisk?.overall_risk_level === "high" || latestRisk?.overall_risk_level === "emergency",
     },
     {
       icon: MessageCircle,
@@ -115,8 +100,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-warm-50 pb-20">
-      {latestRisk?.is_emergency && <EmergencyBanner />}
-
       <div className="bg-gradient-to-br from-primary-500 via-primary-600 to-earth-600 px-6 pt-8 pb-6">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4">
@@ -154,27 +137,6 @@ export default function DashboardPage() {
               dueDate={pregnancy.estimated_due_date}
               status={pregnancy.status}
             />
-          </motion.div>
-        )}
-
-        {latestRisk && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-white rounded-3xl shadow-card p-5 mt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">{t("latest_risk")}</p>
-                <RiskLevelBadge level={latestRisk.overall_risk_level} large />
-              </div>
-              <Link to={`/risk-assessment/result/${latestRisk.id}`} className="text-primary-500 text-sm font-medium">
-                {t("view_details")} →
-              </Link>
-            </div>
-            {latestRisk.is_emergency && (
-              <div className="mt-3 bg-emergency-50 border border-emergency-200 rounded-2xl p-3 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-emergency-500 flex-shrink-0" />
-                <p className="text-emergency-700 text-xs font-medium">{t("emergency_detected")}</p>
-              </div>
-            )}
           </motion.div>
         )}
 
