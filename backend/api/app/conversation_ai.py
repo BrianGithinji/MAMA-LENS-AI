@@ -1010,10 +1010,9 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """POST to HF Inference via router.huggingface.co (resolves on HF Spaces)."""
+        """POST to HF Inference API (seq2seq/T5 compatible endpoint)."""
         import httpx, os
 
-        # Read token at request time — HF Spaces injects secrets after module load
         hf_token = os.environ.get("HF_API_TOKEN", "").strip()
         hf_model = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
         if not hf_token:
@@ -1028,14 +1027,13 @@ class ConversationalAI:
                 "temperature": 0.7,
                 "do_sample": True,
                 "repetition_penalty": 1.3,
-                "return_full_text": False,
             },
             "options": {"wait_for_model": True, "use_cache": False},
         }
 
-        # Use router.huggingface.co (resolves on HF Spaces)
-        # For seq2seq models use the standard inference path, not /v1/text-generation
-        url = f"https://router.huggingface.co/hf-inference/models/{hf_model}"
+        # Use the standard HF Inference API — correctly handles seq2seq (T5/flan-t5)
+        # router.huggingface.co appends /v1/text-generation which breaks seq2seq models
+        url = f"https://api-inference.huggingface.co/models/{hf_model}"
 
         with httpx.Client(timeout=60) as client:
             resp = client.post(
@@ -1485,3 +1483,4 @@ if __name__ == "__main__":
         print(f"  Intent: {response.intent.value} | Emergency: {response.is_emergency}")
         if response.is_emergency:
             print(f"  EMERGENCY TYPE: {response.emergency_type}")
+# HF Inference: uses router.huggingface.co/hf-inference/models/{model} (no /v1/text-generation) 
