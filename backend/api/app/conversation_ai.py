@@ -1004,7 +1004,7 @@ class ConversationalAI:
             )
             self._model = T5ForConditionalGeneration.from_pretrained(
                 hf_model, cache_dir=cache_dir, token=hf_token,
-                low_cpu_mem_usage=True, use_safetensors=False,
+                low_cpu_mem_usage=True,
             )
             self._model.eval()
             logger.info("MAMA model loaded: %s", hf_model)
