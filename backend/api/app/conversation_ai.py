@@ -986,7 +986,9 @@ class ConversationalAI:
 
     def _hf_api_response(self, ctx, user_message, language, literacy_level, channel):
         """Load mama-flan-t5 locally and generate response."""
-        import os, torch
+        import os
+        import torch
+        from transformers import AutoTokenizer, T5ForConditionalGeneration
 
         hf_model = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
         hf_token = os.environ.get("HF_API_TOKEN", "").strip() or None
@@ -995,7 +997,7 @@ class ConversationalAI:
         full_prompt, max_tokens = self._build_prompt(ctx, user_message, language, literacy_level, channel)
 
         if self._tokenizer is None:
-            from transformers import AutoTokenizer, T5ForConditionalGeneration
+            logger.info("Loading MAMA model: %s from cache: %s", hf_model, cache_dir)
             self._tokenizer = AutoTokenizer.from_pretrained(
                 hf_model, cache_dir=cache_dir, token=hf_token
             )
