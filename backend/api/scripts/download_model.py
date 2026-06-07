@@ -3,17 +3,15 @@ import os, sys
 
 model_id = os.environ.get("HF_MODEL_ID", "BrianGithinji/mama-flan-t5").strip()
 cache_dir = os.environ.get("HF_HOME", "/tmp/hf_cache")
+token = os.environ.get("HF_API_TOKEN", "").strip() or None
 
 print(f"Downloading {model_id} -> {cache_dir}", flush=True)
 
 try:
     from transformers import AutoTokenizer, T5ForConditionalGeneration
-    AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir)
-    T5ForConditionalGeneration.from_pretrained(
-        model_id, cache_dir=cache_dir, low_cpu_mem_usage=True
-    )
+    AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir, token=token)
+    T5ForConditionalGeneration.from_pretrained(model_id, cache_dir=cache_dir, token=token, low_cpu_mem_usage=True)
     print("MAMA model cached successfully.", flush=True)
 except Exception as e:
     print(f"WARNING: model download failed: {e}", flush=True)
-    print("Server will use rule-based fallback on first request.", flush=True)
     sys.exit(0)

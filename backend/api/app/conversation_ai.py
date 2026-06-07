@@ -27,7 +27,7 @@ except ImportError:
 _HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
 _HF_CACHE_DIR = os.environ.get("HF_HOME", "/tmp/hf_cache")
 _HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
-_HF_INFERENCE_URL = f"https://router.huggingface.co/hf-inference/models/{_HF_MODEL_ID}"  # seq2seq path for HF Spaces
+_HF_INFERENCE_URL = f"https://api-inference.huggingface.co/models/{_HF_MODEL_ID}"  # seq2seq (T5/flan-t5) endpoint
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -609,9 +609,9 @@ class ConversationalAI:
     def __init__(self) -> None:
         self._intent_patterns = self._compile_intent_patterns()
         self._emergency_patterns = self._compile_emergency_patterns()
-        self._sessions: Dict[str, ConversationContext] = {}  # in-process cache
-        self._local_model_checked = False
-        self._local_model_available = False
+        self._sessions: Dict[str, ConversationContext] = {}
+        self._tokenizer = None
+        self._model = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -964,12 +964,13 @@ class ConversationalAI:
         literacy_level: str,
         channel: str,
     ) -> Tuple[str, float]:
-        """Generate response via HF Inference API (fine-tuned model, zero local RAM)."""
-        try:
-            return self._hf_api_response(ctx, user_message, language, literacy_level, channel)
-        except Exception as exc:
-            logger.warning("HF Inference API failed: %s: %s. Using rule-based fallback.", type(exc).__name__, repr(exc))
-        return self._rule_based_response(intent, language, literacy_level, ctx, user_message), 0.70
+        """Generate response via fine-tuned mama-flan-t5 model, fallback to rule-based."""
+        if _HF_API_TOKEN:
+            try:
+                return self._hf_api_response(ctx, user_message, language, literacy_level, channel)
+            except Exception as exc:
+                logger.warning("Model failed: %s: %s — using rule-based.", type(exc).__name__, repr(exc))
+        return self._rule_based_response(intent, language, literacy_level, ctx, user_message), 0.75
 
     def _check_local_model(self) -> bool:
         """Returns True if HF API token is configured."""
@@ -978,77 +979,49 @@ class ConversationalAI:
 
     def _build_prompt(self, ctx: ConversationContext, user_message: str,
                       language: str, literacy_level: str, channel: str) -> Tuple[str, int]:
-        """Build the full prompt string and return (prompt, max_tokens)."""
-        history = ctx.get_recent_messages(4)
-        history = history[:-1] if history and history[-1]["role"] == "user" else history
-        context_parts = [
-            f"{'Patient' if m['role'] == 'user' else 'MAMA'}: {m['content']}"
-            for m in history
-        ]
-        query = user_message
-        hints = []
-        if ctx.gestational_age_weeks:
-            hints.append(f"(Week {ctx.gestational_age_weeks} of pregnancy)")
-        if literacy_level == "low":
-            hints.append("(Use very simple language)")
-        if channel in ("sms", "ussd"):
-            hints.append("(Keep response under 160 characters)")
-        prompt = query + (" " + " ".join(hints) if hints else "")
-        context_str = "\n".join(context_parts)
-        full_prompt = (
-            f"maternal health conversation:\n{context_str}\nPatient: {prompt}\nMAMA:"
-            if context_str else f"maternal health: {prompt}"
-        )
-        max_tokens = 100 if channel in ("sms", "ussd") else 300
-        return full_prompt, max_tokens
+        """Build prompt matching the training format: 'maternal health: {question}'."""
+        max_tokens = 100 if channel in ("sms", "ussd") else 256
+        prompt = f"maternal health: {user_message}"
+        return prompt, max_tokens
 
-    def _hf_api_response(
-        self,
-        ctx: ConversationContext,
-        user_message: str,
-        language: str,
-        literacy_level: str,
-        channel: str,
-    ) -> Tuple[str, float]:
-        """POST to HF Inference API (seq2seq/T5 compatible endpoint)."""
-        import httpx, os
+    def _hf_api_response(self, ctx, user_message, language, literacy_level, channel):
+        """Load mama-flan-t5 locally and generate response."""
+        import os, torch
 
-        hf_token = os.environ.get("HF_API_TOKEN", "").strip()
         hf_model = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
-        if not hf_token:
-            raise ValueError("HF_API_TOKEN is not set")
+        hf_token = os.environ.get("HF_API_TOKEN", "").strip() or None
+        cache_dir = os.environ.get("HF_HOME", "/tmp/hf_cache")
 
         full_prompt, max_tokens = self._build_prompt(ctx, user_message, language, literacy_level, channel)
 
-        payload = {
-            "inputs": full_prompt,
-            "parameters": {
-                "max_new_tokens": max_tokens,
-                "temperature": 0.7,
-                "do_sample": True,
-                "repetition_penalty": 1.3,
-            },
-            "options": {"wait_for_model": True, "use_cache": False},
-        }
-
-        # Use the standard HF Inference API — correctly handles seq2seq (T5/flan-t5)
-        # router.huggingface.co appends /v1/text-generation which breaks seq2seq models
-        url = f"https://api-inference.huggingface.co/models/{hf_model}"
-
-        with httpx.Client(timeout=60) as client:
-            resp = client.post(
-                url,
-                json=payload,
-                headers={
-                    "Authorization": f"Bearer {hf_token}",
-                    "Content-Type": "application/json",
-                },
+        if self._tokenizer is None:
+            from transformers import AutoTokenizer, T5ForConditionalGeneration
+            self._tokenizer = AutoTokenizer.from_pretrained(
+                hf_model, cache_dir=cache_dir, token=hf_token
             )
-            resp.raise_for_status()
-            result = resp.json()
+            self._model = T5ForConditionalGeneration.from_pretrained(
+                hf_model, cache_dir=cache_dir, token=hf_token, low_cpu_mem_usage=True
+            )
+            self._model.eval()
+            logger.info("MAMA model loaded: %s", hf_model)
 
-        response = (result[0].get("generated_text") or "").strip() if result else ""
-        return response, 0.85
+        inputs = self._tokenizer(
+            full_prompt, return_tensors="pt", max_length=512, truncation=True
+        )
+        with torch.no_grad():
+            outputs = self._model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                do_sample=True,
+                temperature=0.7,
+                top_p=0.9,
+                repetition_penalty=1.3,
+            )
+        text = self._tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+        logger.info("Model output: %r", text[:120])
+        if not text:
+            raise ValueError("Empty response from local model")
+        return text, 0.90
 
     # Languages passed directly to the model (no translation needed — model is multilingual)
     _TRANSLATE_LANGS: set = set()
@@ -1483,4 +1456,4 @@ if __name__ == "__main__":
         print(f"  Intent: {response.intent.value} | Emergency: {response.is_emergency}")
         if response.is_emergency:
             print(f"  EMERGENCY TYPE: {response.emergency_type}")
-# HF Inference: uses router.huggingface.co/hf-inference/models/{model} (no /v1/text-generation) 
+# HF Inference: uses api-inference.huggingface.co/models/{model} — correct endpoint for seq2seq T5
