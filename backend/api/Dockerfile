@@ -14,9 +14,10 @@ COPY . .
 
 # Pre-download the fine-tuned model into the image at build time
 ARG HF_API_TOKEN
-ENV HF_HOME=/tmp/hf_cache
+ENV HF_HOME=/app/hf_cache
 RUN python scripts/download_model.py
 
+# Create non-root user and fix permissions
 RUN useradd -m -u 1000 mamalens && chown -R mamalens:mamalens /app
 USER mamalens
 
