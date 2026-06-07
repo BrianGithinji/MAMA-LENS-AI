@@ -1,4 +1,6 @@
-"""Pre-download the MAMA flan-t5 model to HF cache at build time."""
+"""Pre-download the MAMA flan-t5 model files to HF cache at build time.
+Downloads files only — does not load weights into memory (avoids safetensors bug).
+"""
 import os, sys
 
 model_id = os.environ.get("HF_MODEL_ID", "BrianGithinji/mama-flan-t5").strip()
@@ -8,10 +10,14 @@ token = os.environ.get("HF_API_TOKEN", "").strip() or None
 print(f"Downloading {model_id} -> {cache_dir}", flush=True)
 
 try:
-    from transformers import AutoTokenizer, T5ForConditionalGeneration
-    AutoTokenizer.from_pretrained(model_id, cache_dir=cache_dir, token=token)
-    T5ForConditionalGeneration.from_pretrained(model_id, cache_dir=cache_dir, token=token, low_cpu_mem_usage=True)
-    print("MAMA model cached successfully.", flush=True)
+    from huggingface_hub import snapshot_download
+    snapshot_download(
+        repo_id=model_id,
+        cache_dir=cache_dir,
+        token=token,
+        ignore_patterns=["*.msgpack", "*.h5", "flax_model*", "tf_model*"],
+    )
+    print("MAMA model files downloaded successfully.", flush=True)
 except Exception as e:
     print(f"WARNING: model download failed: {e}", flush=True)
     sys.exit(0)
