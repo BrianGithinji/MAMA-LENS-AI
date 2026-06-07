@@ -4,7 +4,6 @@ from app.api.v1.endpoints import (
     auth,
     users,
     pregnancy,
-    risk_assessment,
     anemia_detection,
     health_records,
     appointments,
@@ -25,7 +24,6 @@ api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
 api_router.include_router(pregnancy.router, prefix="/pregnancy", tags=["Pregnancy"])
-api_router.include_router(risk_assessment.router, prefix="/risk", tags=["Risk Assessment"])
 api_router.include_router(anemia_detection.router, prefix="/anemia", tags=["Anemia Detection"])
 api_router.include_router(health_records.router, prefix="/health-records", tags=["Health Records"])
 api_router.include_router(appointments.router, prefix="/appointments", tags=["Appointments"])

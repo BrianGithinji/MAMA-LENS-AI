@@ -22,12 +22,10 @@ pydantic-settings==2.9.1
 email-validator==2.1.1
 
 # ─── AI / ML ─────────────────────────────────────────────────────────────────
-# Model inference via HuggingFace Inference API (BrianGithinji/mama-flan-t5)
-# torch/transformers not needed at runtime — called remotely
 numpy==1.26.4
 scikit-learn==1.5.0
 Pillow==10.3.0
-huggingface_hub>=0.23.0
+huggingface_hub==0.24.7
 
 # ─── Utilities ───────────────────────────────────────────────────────────────
 python-dotenv==1.0.1

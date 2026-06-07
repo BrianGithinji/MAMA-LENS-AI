@@ -126,6 +126,25 @@ async def health_check():
     }
 
 
+@app.get("/debug/version")
+async def debug_version():
+    """Show exactly what code is running — URL, commit info."""
+    import os
+    hf_token = os.environ.get("HF_API_TOKEN", "").strip()
+    hf_model = os.environ.get("HF_MODEL_ID", "").strip() or "BrianGithinji/mama-flan-t5"
+    from app.conversation_ai import ConversationalAI
+    ai = ConversationalAI.__new__(ConversationalAI)
+    import inspect, app.conversation_ai as cai
+    src = inspect.getsource(cai.ConversationalAI._hf_api_response)
+    url_line = [l.strip() for l in src.splitlines() if "router.huggingface" in l or "api-inference" in l]
+    return {
+        "HF_API_TOKEN_set": bool(hf_token),
+        "HF_API_TOKEN_prefix": hf_token[:12] + "..." if hf_token else "EMPTY",
+        "HF_MODEL_ID": hf_model,
+        "inference_url_in_code": url_line,
+    }
+
+
 @app.get("/debug/network")
 async def debug_network():
     """Test outbound connectivity from HF Spaces to HuggingFace inference."""
