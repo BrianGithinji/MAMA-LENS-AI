@@ -1146,7 +1146,7 @@ class ConversationalAI:
                 ),
             },
             Intent.EMOTIONAL_SUPPORT: {
-                "en": "I hear you, and your feelings are completely valid. Pregnancy can be an emotional journey. You are not alone. Would you like to talk more about how you are feeling?",
+                "en": "I hear you, and your feelings are completely valid. Pregnancy and loss can bring such heavy emotions. You are not alone in this. Would you like to talk more about what you are going through?",
                 "sw": (
                     "Nakusikia, na hisia zako ni za kweli kabisa. 💚\n\n"
                     "Ujauzito unaweza kuleta hisia nyingi — furaha, wasiwasi, hofu, na huzuni. "

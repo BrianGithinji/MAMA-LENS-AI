@@ -101,6 +101,8 @@ async def avatar_chat(
             if emotion_result.crisis_detected:
                 text_response = emotion_result.compassionate_response
                 is_emergency = True
+            elif emotion_result.primary_emotion.value in ("grief", "sadness", "hopelessness") and emotion_result.distress_level >= 0.20:
+                text_response = emotion_result.compassionate_response
         except Exception as e:
             logger.warning("Emotion detection fallback", error=str(e))
 

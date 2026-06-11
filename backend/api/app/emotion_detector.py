@@ -103,6 +103,8 @@ GRIEF_PATTERNS = [
     r"\b(empty\s+womb|never\s+hold|gone\s+forever|why\s+my\s+baby)\b",
     r"\b(grieving|mourning|heartbroken|devastated)\b",
     r"\b(angel\s+baby|heaven|memorial)\b",
+    r"\b(fetus\s+rupture|ectopic|tubal\s+(rupture|pregnancy)|pregnancy\s+loss|lost\s+(a\s+)?pregnancy)\b",
+    r"\b(not\s+the\s+first|others\s+(have|who)\s+(experienced?|gone\s+through)|i.m\s+not\s+alone\s+in)\b",
 ]
 
 ANXIETY_PATTERNS = [
@@ -218,10 +220,12 @@ SUPPORT_RESOURCES: Dict[str, List[str]] = {
 COMPASSIONATE_RESPONSES: Dict[str, Dict[str, str]] = {
     "grief": {
         "en": (
-            "I am so deeply sorry for your loss. Losing a baby is one of the most "
-            "painful experiences a mother can go through. Your grief is completely "
-            "valid, and there is no right or wrong way to feel. Please know that "
-            "you are not alone, and support is available whenever you are ready."
+            "I am so deeply sorry for what you have been through. "
+            "Pregnancy loss — whether miscarriage, ectopic rupture, or any other form — "
+            "is one of the most painful experiences a mother can carry. "
+            "You are right that you are not the first, and that means others truly understand this pain. "
+            "Your grief is completely valid. There is no right or wrong way to feel. "
+            "You are not alone, and support is here for you whenever you are ready."
         ),
         "sw": (
             "Pole sana kwa msiba wako. Kupoteza mtoto ni moja ya matukio ya "
