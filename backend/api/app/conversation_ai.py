@@ -955,6 +955,12 @@ class ConversationalAI:
     # Response generation
     # ------------------------------------------------------------------
 
+    # Intents where rule-based is more reliable than the model
+    _RULE_BASED_INTENTS = {
+        Intent.EMOTIONAL_SUPPORT, Intent.GREETING, Intent.CAPABILITY_QUERY,
+        Intent.LABOR_SIGNS, Intent.FETAL_MOVEMENT,
+    }
+
     def _generate_response(
         self,
         ctx: ConversationContext,
@@ -965,6 +971,9 @@ class ConversationalAI:
         channel: str,
     ) -> Tuple[str, float]:
         """Generate response via fine-tuned mama-flan-t5 model, fallback to rule-based."""
+        # Skip model for intents where rule-based is more reliable
+        if intent in self._RULE_BASED_INTENTS:
+            return self._rule_based_response(intent, language, literacy_level, ctx, user_message), 0.85
         if _HF_API_TOKEN:
             try:
                 return self._hf_api_response(ctx, user_message, language, literacy_level, channel)
@@ -1016,15 +1025,23 @@ class ConversationalAI:
             outputs = self._model.generate(
                 **inputs,
                 max_new_tokens=max_tokens,
-                do_sample=True,
-                temperature=0.7,
-                top_p=0.9,
-                repetition_penalty=1.3,
+                do_sample=False,       # greedy — stops hallucination loops
+                repetition_penalty=1.5,
+                no_repeat_ngram_size=4,
             )
         text = self._tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
         logger.info("Model output: %r", text[:120])
         if not text:
             raise ValueError("Empty response from local model")
+        # Truncate at first sentence that starts repeating a first-person identity claim
+        # e.g. "I am a mother of two" — hallucination signature for this model
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        clean = []
+        for s in sentences:
+            if re.search(r'\bI am a (mother|father|doctor|nurse|woman|man)\b', s, re.IGNORECASE):
+                break
+            clean.append(s)
+        text = ' '.join(clean).strip() or text
         return text, 0.90
 
     # Languages passed directly to the model (no translation needed — model is multilingual)
